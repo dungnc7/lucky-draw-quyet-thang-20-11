@@ -1,34 +1,53 @@
-# Chương Trình Quay Thưởng 20/11/2026 — Quyết Thắng
+# Lucky Draw Quyết Thắng v2.4
 
-Website quay thưởng dành cho chương trình Ngày Nhà giáo Việt Nam 20/11/2026 của Trung tâm Giáo dục Nghề nghiệp Quyết Thắng.
+Chương trình quay thưởng Ngày Nhà giáo Việt Nam 20/11/2026 — Trung tâm Giáo dục Nghề nghiệp Quyết Thắng.
 
-**Demo / website:** Sau khi kích hoạt GitHub Pages, truy cập `https://dungnc7.github.io/lucky-draw-quyet-thang-20-11/`.
+Website: [dungnc7.github.io/lucky-draw-quyet-thang-20-11](https://dungnc7.github.io/lucky-draw-quyet-thang-20-11/)
 
-## Tính năng
+## Cấu hình
 
-- Nhập Excel/CSV qua chọn file hoặc kéo thả, ưu tiên **mã nhân viên** thay vì CCCD.
-- 5 hạng giải, tổng 44 suất, quay **15 giây/hạng** (mặc định).
-- Chỉnh giá trị tiền thưởng trước khi quay; không cho một nhân viên trúng hai giải.
-- Giao diện sân khấu 20/11, logo Quyết Thắng, tiếng đếm ngược và nhạc nền bật/tắt được.
-- Xuất Excel kết quả và nhật ký quay cho người vận hành.
+| Hạng giải | Tổng người | Người/lượt | Số lượt | Thời gian/lượt |
+|---|---:|---:|---:|---:|
+| Khuyến khích | 30 | 5 | 6 | 10 giây |
+| Tư | 8 | 4 | 2 | 10 giây |
+| Ba | 3 | 1 | 3 | 10 giây |
+| Nhì | 2 | 1 | 2 | 10 giây |
+| Nhất | 1 | 1 | 1 | 10 giây |
 
-## Chạy thử
+Tổng 44 người khác nhau, 14 lượt, 140 giây đếm ngược; thời gian MC chuẩn bị giữa các lượt không tính vào tổng này. Trình duyệt công bố ở lần xử lý timer đầu tiên tại/sau mốc 10.000 ms; không thể bảo đảm độ chính xác thời gian thực của hệ điều hành.
 
-Mở `index.html` trên Chrome/Edge hoặc dùng GitHub Pages. Nhấn **Nạp dữ liệu demo** để kiểm tra. Có thể chạy offline; không cần backend.
+## Vận hành
 
-## Cài GitHub Pages
+1. Mở website hoặc tải `index.html` và mở bằng Chrome/Edge để dùng offline. Không cần build, CDN, backend hay cài package.
+2. Chọn hoặc kéo thả Excel `.xlsx`/`.xlsm` hoặc CSV, ít nhất 44 nhân viên hợp lệ. Ưu tiên cột **Mã nhân viên**, **Họ tên**; **Phòng ban** và **Số CCCD** tùy chọn. Không chạy macro/formula. `.xls` cũ cần lưu lại thành `.xlsx`.
+3. Kiểm tra báo cáo loại dòng sai/trùng và chỉnh số tiền từng giải. Trường tiền khóa ngay khi bắt đầu lượt đầu; chỉ phiên mới cho phép sửa lại.
+4. Dùng **Chế độ sân khấu** để ẩn quản trị và yêu cầu fullscreen khi trình duyệt hỗ trợ. Có thể dùng fullscreen của trình duyệt nếu yêu cầu này bị từ chối. Màn hình 16:9 1366×768 và 1920×1080 đã kiểm tra bố cục.
+5. Bật/tắt nhạc và âm đếm giây độc lập. Âm tổng hợp có sẵn, không tải nhạc từ mạng; file nhạc riêng do người vận hành chọn cần có quyền sử dụng. Trình duyệt cần tương tác người dùng để phát âm.
+6. Nhấn **Bắt đầu quay** cho từng lượt. Kết quả giữ trên màn hình công bố. **Chuẩn bị lượt tiếp theo** chỉ chuyển sang sẵn sàng; nhấn bắt đầu lần nữa mới quay. Không tự chạy lượt kế tiếp.
+7. Xuất Excel kết quả và nhật ký JSON; mỗi dòng có lượt trong hạng, lượt toàn chương trình và số tiền giải. Lưu file an toàn sau sự kiện.
 
-Vào repository → **Settings → Pages** → **Build and deployment** → **Deploy from a branch** → chọn `main` và `/(root)` → **Save**.
+## Lưu phiên và nâng cấp
 
-Đường dẫn website mặc định: `https://dungnc7.github.io/lucky-draw-quyet-thang-20-11/` (chỉ hoạt động sau khi GitHub Pages báo đã xuất bản).
+Người được chọn, thời điểm kết thúc, tiền giải và trạng thái được ghi vào `sessionStorage` trước khi chạy đếm ngược. Refresh khôi phục đúng người đã chọn; lượt hết thời gian được công bố một lần. Khi không ghi được bộ nhớ, lượt mới không bắt đầu. Khi không ghi được kết quả, giữ tab và tải lại để khôi phục lượt đã lưu; không nạp danh sách mới để quay lại.
 
-## Dữ liệu và quyền riêng tư
+Mỗi tab/trình duyệt là phiên **độc lập**, không có đồng bộ thiết bị. Dữ liệu có thể mất khi đóng tab, dùng chế độ riêng tư hoặc xóa bộ nhớ. Không đổi máy, đóng tab hay chỉnh đồng hồ hệ thống giữa lượt. Đây không phải hệ thống kiểm toán chống sửa đổi hoặc biên bản ký số.
 
-- **Không commit hoặc tải lên GitHub danh sách nhân viên thật**, CCCD, bảng kết quả hoặc nhật ký quay. Repository và website là công khai.
-- File Excel được đọc trong **trình duyệt người vận hành**, không gửi lên máy chủ; tính năng quay và xuất file chạy client-side. Dữ liệu có thể được giữ tạm trong `sessionStorage` của tab đang sử dụng.
-- Mỗi trình duyệt có một phiên quay **độc lập**; không đồng bộ danh sách và kết quả giữa các thiết bị.
-- Hãy lưu bản kết quả Excel sau sự kiện. Đây là website quay thưởng client-side, không phải hệ thống kiểm toán có bảo đảm chống sửa đổi tuyệt đối.
+Phiên v2.3 có cấu hình khác nên không được tự chuyển sang v2.4. Nếu phát hiện phiên cũ, ứng dụng khóa bắt đầu và cung cấp **Xuất phiên v2.3** để tải bản JSON lưu trữ cũ. Kiểm tra/lưu bản này trước khi chủ động xóa phiên. Không trộn kết quả hai phiên bản.
 
-## Bản quyền
+## Quyền riêng tư
 
-Logo thuộc đơn vị sở hữu tương ứng. JSZip được sử dụng theo giấy phép trong [`LICENSE-JSZIP.txt`](./LICENSE-JSZIP.txt).
+Repository và website công khai. **Không commit danh sách nhân viên thật, CCCD, kết quả hay nhật ký.** File được xử lý trong trình duyệt, không tải lên máy chủ. Màn hình công bố chỉ hiện mã và tên. Với dòng chỉ có CCCD, mã trình chiếu `NV-00001` dựa trên vị trí nhập, không chứa chữ số CCCD; Excel riêng của người vận hành vẫn có cột CCCD nếu đã nhập.
+
+Chế độ demo tạo tên/mã giả lập và CCCD trống. Chỉ dùng demo/fixture giả lập để kiểm thử; xóa phiên demo trước sự kiện.
+
+## Kiểm tra phát hành
+
+```sh
+python3 scripts/preflight.py
+node --test tests/test-v24.cjs
+python3 -m http.server 8765 --bind 127.0.0.1
+```
+
+Python 3 và Node.js 20+ chỉ cần cho kiểm tra phát triển. Xem [kiến trúc](docs/ARCHITECTURE.md), [QA](docs/QA_V2_4.md) và [triển khai](PUBLISH.md).
+
+Logo được giữ nguyên từ bộ nguồn do chủ dự án cung cấp; không thêm hình ảnh, font hoặc nhạc bên ngoài. JSZip 3.10.1 giữ nguyên, giấy phép tại LICENSE-JSZIP.txt. Họa tiết sách và hiệu ứng mới được tạo bằng SVG/CSS, âm nền được tổng hợp bằng Web Audio.

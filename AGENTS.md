@@ -1,17 +1,16 @@
-# Codex instructions — Lucky Draw Quyết Thắng 20/11
+# Lucky Draw Quyết Thắng — engineering rules
 
-## Mission
-Publish this existing static website publicly at GitHub Pages, using the owner's GitHub account `dungnc7`. Repository target: `dungnc7/lucky-draw-quyet-thang-20-11` (public). Prefer preserving the working v2.3 site unchanged.
+## Current owner request
+Upgrade the existing v2.3 application to v2.4; the latest explicit v2.4 request supersedes the previous instruction to preserve the 15-second, single-batch UI. Maintain the working importer, exporter, company logo, monetary configuration, independent audio and standalone HTML architecture.
 
-## Source of truth
-- `index.html` is the entire application, including embedded JS, CSS, logo, music and Excel import library. No build step, Node packages, CDN, backend or secrets are required.
-- `README.md` explains the application and its privacy limitations.
-- `CODEX_DEPLOY_TASK.md` contains the deployment procedure and acceptance criteria.
-
-## Non-negotiable constraints
-1. Do not push any real employee/customer rosters, national identity numbers (CCCD), prize results, event logs, environment files, passwords, tokens or other private information. The repository must contain only the sanitized deployment bundle.
-2. Do not rewrite the drawing algorithm, UI, prize values, or 15-second timer. Only make narrowly scoped changes if required to deploy.
-3. Check for an existing target repository before creating anything. Do not overwrite an unrelated repository, branch or Pages configuration. If a repository exists with unexpected contents, stop and report rather than force push.
-4. No `git push --force`; no storing credentials in committed files; use the user's existing GitHub login/authorized `gh` credentials.
-5. Verify the actual deployed GitHub Pages URL is reachable and displays the expected Vietnamese event heading. Do not claim deployment success merely because a push succeeded.
-6. If GitHub authentication or Pages admin permission is missing, report the exact blocker and minimal required user action.
+## Release contract
+- Repository: `dungnc7/lucky-draw-quyet-thang-20-11`, PUBLIC. Pages: `main`, `/(root)`.
+- Exactly 14 manually triggered batches, 10,000 ms each, 44 unique winners: 6×5 encouragement, 2×4 fourth, 3×1 third, 2×1 second, 1×1 first.
+- Cryptographic rejection sampling; persist before draw/reveal/progression. Never reselect a pending batch after refresh. Fail closed if persistence is unavailable.
+- Lock prize amounts from the first started draw. Snapshot selected monetary value in results and audit exports.
+- Winner cards show only employee code and name; never CCCD or department. CCCD-only imports receive a local row reference for presentation.
+- Keep old v2.3 sessions separate. Offer a local backup; never silently reinterpret old outcomes as v2.4 batches.
+- Never commit real participant data, CCCD, results, runtime storage, Excel/CSV files, credentials or downloaded test exports. Test with synthetic data only; keep fixtures and screenshots outside the repository.
+- Do not force push or replace unrelated history/configuration. Do not assume private repositories can host Pages on the current plan.
+- Before committing: run `python3 scripts/preflight.py` and `node --test tests/test-v24.cjs`; perform browser smoke testing when available.
+- Verify the actual public endpoint and deployment status before claiming a release is live. Document what was tested and any manual validation still required.

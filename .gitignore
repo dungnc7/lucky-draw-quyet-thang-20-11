@@ -8,3 +8,12 @@ node_modules/
 ket-qua*
 nhat-ky*
 *.log
+.env
+.env.*
+*.pem
+*.key
+__pycache__/
+coverage/
+playwright-report/
+test-results/
+phien-*.json

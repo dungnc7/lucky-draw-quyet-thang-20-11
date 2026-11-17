@@ -1,20 +1,24 @@
-# Hướng dẫn triển khai công khai lên GitHub Pages
+# GitHub Pages — Lucky Draw Quyết Thắng v2.4
 
-1. Đăng nhập tài khoản GitHub `dungnc7` tại https://github.com/new .
-2. Tạo repository `lucky-draw-quyet-thang-20-11`, chọn **Public**, nhấn **Create repository**.
-3. Trong repo mới, chọn **Add file → Upload files**, kéo toàn bộ file trong thư mục này vào (quan trọng nhất là `index.html`), nhấn **Commit changes**. Hoặc dùng `git` từ terminal.
-4. Vào **Settings → Pages**, ở **Build and deployment** chọn **Deploy from a branch**, **main**, **/(root)** rồi **Save**.
-5. Khi workflow Pages hoàn tất, mở `https://dungnc7.github.io/lucky-draw-quyet-thang-20-11/`.
+Repository: https://github.com/dungnc7/lucky-draw-quyet-thang-20-11
 
-Nếu muốn dùng Git CLI sau khi đã tạo repository rỗng:
+Website: https://dungnc7.github.io/lucky-draw-quyet-thang-20-11/
 
-```bash
-git init
-git add .
-git commit -m "Deploy Lucky Draw 20-11 v2.3"
-git branch -M main
-git remote add origin https://github.com/dungnc7/lucky-draw-quyet-thang-20-11.git
-git push -u origin main
+Keep repository **PUBLIC** on the current GitHub plan. Changing it to private previously removed Pages; a private repo needs a supported paid plan or different hosting.
+
+Pages source: **Settings → Pages → Deploy from a branch → main → /(root)**. Keep `.nojekyll`; no build dependencies are required.
+
+Before commit:
+
+```sh
+python3 scripts/preflight.py
+node --test tests/test-v24.cjs
+git diff --check
+git diff --stat
 ```
 
-**Không đưa file nhân viên thật hoặc kết quả quay lên GitHub.**
+Inspect every staged path. Only publish the source allowlist; never include Excel/CSV rosters, results, audit JSON, credentials, screenshots containing participant data or runtime session dumps. Preserve existing history; no force pushes.
+
+After push, require the Pages workflow for that SHA to succeed. Check the public URL **without authentication**, HTTP 200 and content hash against reviewed `index.html`. Test logo, new theme and a demo batch in a browser. A successful push alone is not proof of publication.
+
+The same `index.html` can be saved and used locally offline in a supported browser. Check actual projector, fullscreen permissions, speakers and sound volume on the event laptop before live use. Save local result exports after the event.
