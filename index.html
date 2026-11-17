@@ -178,6 +178,15 @@ input[type=text]{background:#ffffff08;color:var(--ink);border-color:#e8bf753d;bo
 
 
 @media(min-width:1100px) and (max-height:850px){.projector .stage-content{padding:14px 24px 20px}.projector .hero-logo{width:88px;height:60px}.projector .hero-brand{gap:12px;margin-bottom:8px}.projector .hero-brand-text strong{font-size:28px}.projector .hero-brand-text span{font-size:9px}.projector .hero-kicker{font-size:9px}.projector .hero-head h1{font-size:28px;line-height:1.3;margin-top:10px;max-width:1000px}.projector .hero-head{margin-bottom:16px}.projector .stage-card{padding:14px 24px 20px}.projector .stage-batch{padding:6px 16px;font-size:11px;margin:0 0 6px}.projector .prize-title{font-size:38px;margin:4px auto}.projector .prize-value{font-size:24px;margin-top:8px}.projector .timer-wrapper{width:155px;height:155px;margin:12px auto 8px}.projector .timer-text{font-size:42px}.projector .timer-caption,.projector .timer-sub{font-size:7px}.projector .number-reel{font-size:20px}.projector .reel-container{min-height:29px;margin-top:4px}.projector .stage-action{margin-top:12px}.projector .primary-btn{padding:14px 18px}.reveal-overlay{padding:20px 32px}.reveal-content{min-height:calc(100dvh - 40px)}.reveal-brand img{height:46px;width:65px}.reveal-brand strong{font-size:19px}.reveal-eyebrow{margin-top:14px}.reveal-title{font-size:48px;margin-top:8px}.reveal-batch{margin-top:10px}.reveal-grid{padding:26px 0}.reveal-person{min-height:150px!important}.reveal-grid.tier-1 .reveal-person{min-height:195px!important}.grand-prize .reveal-title{font-size:64px}}
+
+/* Six consolation winners: centered 3 × 2 on large screens; 2 × 3 on mobile. */
+.reveal-grid.tier-6{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));max-width:1060px;gap:16px;padding:24px 0;align-self:center}
+.reveal-grid.tier-6 .reveal-person{max-width:none;width:100%;min-height:150px!important;padding:20px 14px!important}
+@media(min-width:1100px) and (max-height:850px){.reveal-grid.tier-6{max-width:900px;gap:12px;padding:16px 0}.reveal-grid.tier-6 .reveal-person{min-height:125px!important;padding:16px 12px!important;gap:12px}}
+@media(max-width:680px){.reveal-grid.tier-6{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:24px 0}.reveal-grid.tier-6 .reveal-person{min-height:130px!important;padding:18px 8px!important}}
+
+.results-panel.tier-6 .winner-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));max-width:900px;margin:auto}.results-panel.tier-6 .winner-card{width:100%}
+@media(max-width:680px){.results-panel.tier-6 .winner-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 </head>
 <body>
@@ -211,7 +220,7 @@ input[type=text]{background:#ffffff08;color:var(--ink);border-color:#e8bf753d;bo
       <div class="side-section music-section"><div class="side-label"><span>04</span> NHẠC NỀN</div><input id="musicFile" type="file" accept="audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/aac,audio/mp4,.mp3,.wav,.ogg,.m4a" class="visually-hidden"><label for="musicFile" class="music-upload">♫ Chọn nhạc riêng (MP3 / WAV)</label><div id="musicFileName" class="music-file-name">Chưa chọn nhạc · dùng nhạc nền mặc định</div></div>
       <div class="side-section last-section">
         <div class="side-label"><span>05</span> QUẢN LÝ PHIÊN QUAY</div>
-        <div class="batch-dashboard"><span class="batch-dashboard-label">TIẾN ĐỘ CHƯƠNG TRÌNH</span><strong id="adminBatch">Giải khuyến khích · LƯỢT 1/6</strong><div><span id="adminPhase">Sẵn sàng</span><span>Còn <b id="adminBatchesLeft">14</b> lượt</span></div></div><div class="small-stat"><span>Đã trúng thưởng</span><strong id="sidebarAwarded">0 / 44</strong></div>
+        <div class="batch-dashboard"><span class="batch-dashboard-label">TIẾN ĐỘ CHƯƠNG TRÌNH</span><strong id="adminBatch">Giải khuyến khích · LƯỢT 1/5</strong><div><span id="adminPhase">Sẵn sàng</span><span>Còn <b id="adminBatchesLeft">13</b> lượt</span></div></div><div class="small-stat"><span>Đã trúng thưởng</span><strong id="sidebarAwarded">0 / 44</strong></div>
         <div class="small-stat"><span>Nhân viên còn đủ điều kiện</span><strong id="sidebarRemaining">—</strong></div>
         <button id="legacySessionBtn" class="secondary-btn full hidden">↓ Xuất phiên v2.3</button><button id="exportBtn" class="secondary-btn full" disabled>↓ Xuất kết quả Excel</button>
         <button id="auditBtn" class="secondary-btn full" disabled>↓ Xuất nhật ký JSON</button>
@@ -236,14 +245,14 @@ input[type=text]{background:#ffffff08;color:var(--ink);border-color:#e8bf753d;bo
       </div>
       <div class="stage-card" id="stageCard">
         <div class="stage-card-top">
-          <span class="round-number" id="roundNumber">LƯỢT QUAY 01 / 14</span>
+          <span class="round-number" id="roundNumber">LƯỢT QUAY 01 / 13</span>
           <span class="round-status" id="roundStatus"><span class="status-dot"></span> SẴN SÀNG</span>
         </div>
         <div class="prize-glow">✦</div>
-        <div class="prize-title-label">HẠNG GIẢI HIỆN TẠI</div><div class="stage-batch" id="stageBatch">LƯỢT 1/6</div>
+        <div class="prize-title-label">HẠNG GIẢI HIỆN TẠI</div><div class="stage-batch" id="stageBatch">LƯỢT 1/5</div>
         <h2 class="prize-title" id="currentPrizeTitle">GIẢI KHUYẾN KHÍCH</h2>
         <div class="prize-value" id="currentPrizeValue">200.000 <span>VNĐ / GIẢI</span></div>
-        <div class="prize-detail"><span id="currentPrizeCount">LƯỢT 1/6 · 5 NHÂN VIÊN MAY MẮN</span></div>
+        <div class="prize-detail"><span id="currentPrizeCount">LƯỢT 1/5 · 6 NHÂN VIÊN MAY MẮN</span></div>
         <div class="timer-wrapper">
           <svg class="timer-ring" viewBox="0 0 210 210" aria-hidden="true"><circle cx="105" cy="105" r="91" class="ring-track"/><circle cx="105" cy="105" r="91" class="ring-progress" id="ringProgress"/></svg>
           <div class="timer-inner"><div class="timer-caption">THỜI GIAN CÒN LẠI</div><div class="timer-text" id="timerText" role="timer" aria-live="off">00:10</div><div class="timer-sub" id="timerSub">CHỜ BẮT ĐẦU</div></div>
@@ -266,7 +275,7 @@ input[type=text]{background:#ffffff08;color:var(--ink);border-color:#e8bf753d;bo
       <div class="reveal-overline">NGÀY NHÀ GIÁO VIỆT NAM • 20/11/2026</div>
       <div class="reveal-eyebrow">CHÚC MỪNG NHỮNG NGƯỜI MAY MẮN</div>
       <h2 id="revealTitle" class="reveal-title">GIẢI KHUYẾN KHÍCH</h2>
-      <div id="revealBatch" class="reveal-batch">LƯỢT 1/6</div><div id="revealValue" class="reveal-value">200.000 VNĐ / GIẢI</div>
+      <div id="revealBatch" class="reveal-batch">LƯỢT 1/5</div><div id="revealValue" class="reveal-value">200.000 VNĐ / GIẢI</div>
 
       <div id="revealGrid" class="reveal-grid"></div>
       <div class="reveal-actions">
@@ -421,12 +430,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 (function(global){
 'use strict';
 const DRAW_MS=10_000, VERSION=4;
+const CONFIG_ID='v2.4-consolation-5x6';
 const CONFIG=Object.freeze([
- {key:'encouragement',count:30,batchSize:5}, {key:'fourth',count:8,batchSize:4},
+ {key:'encouragement',count:30,batchSize:6}, {key:'fourth',count:8,batchSize:4},
  {key:'third',count:3,batchSize:1}, {key:'second',count:2,batchSize:1}, {key:'first',count:1,batchSize:1}
 ].map(Object.freeze));
 const BATCHES=Object.freeze(CONFIG.flatMap((p,tierIndex)=>Array.from({length:p.count/p.batchSize},(_,i)=>Object.freeze({tierIndex,key:p.key,count:p.batchSize,number:i+1,total:p.count/p.batchSize}))));
-function create(){return {version:VERSION,phase:'READY',people:[],roundIndex:0,completed:[],pending:[],running:false,roundFinished:false,startedAt:null,roundStartedAt:null,roundEndsAt:0,locked:false}}
+function create(){return {version:VERSION,configId:CONFIG_ID,phase:'READY',people:[],roundIndex:0,completed:[],pending:[],running:false,roundFinished:false,startedAt:null,roundStartedAt:null,roundEndsAt:0,locked:false}}
 function index(n){
  if(!Number.isSafeInteger(n)||n<1||n>0x100000000)throw Error('Phạm vi lấy mẫu không hợp lệ.');
  if(!global.crypto?.getRandomValues)throw Error('Trình duyệt không hỗ trợ số ngẫu nhiên an toàn.');
@@ -461,9 +471,10 @@ function next(s,persist){
  const roundIndex=s.roundIndex+1;
  return commit(s,{roundIndex,phase:roundIndex===BATCHES.length?'COMPLETED':'READY',running:false,roundFinished:false,roundStartedAt:null,roundEndsAt:0,pendingAmount:null},persist);
 }
-function snapshot(s){return JSON.parse(JSON.stringify(Object.fromEntries(['version','phase','people','roundIndex','completed','pending','pendingAmount','running','roundFinished','startedAt','roundStartedAt','roundEndsAt','locked','source','sheet','fingerprint','invalid','duplicated','prizeAmounts','eventName'].map(k=>[k,s[k]]))))}
+function snapshot(s){return JSON.parse(JSON.stringify(Object.fromEntries(['version','configId','phase','people','roundIndex','completed','pending','pendingAmount','running','roundFinished','startedAt','roundStartedAt','roundEndsAt','locked','source','sheet','fingerprint','invalid','duplicated','prizeAmounts','eventName'].map(k=>[k,s[k]]))))}
 function restore(raw){
  const s=typeof raw==='string'?JSON.parse(raw):snapshot(raw);
+ if(s.configId!==CONFIG_ID)throw Error('Cấu hình phiên đã thay đổi. Hãy xuất phiên cấu hình cũ trước khi tạo phiên mới.');
  const fail=()=>{throw Error('Phiên lưu không hợp lệ. Không quay lại tự động; hãy giữ tab và xuất dữ liệu để kiểm tra.')};
  if(s.version!==VERSION||!['READY','DRAWING','REVEAL','WAITING_NEXT_BATCH','COMPLETED'].includes(s.phase)||!Array.isArray(s.people)||s.people.length<1||s.people.length>100000||!Array.isArray(s.completed)||!Array.isArray(s.pending)||!Number.isInteger(s.roundIndex)||s.roundIndex<0||s.roundIndex>BATCHES.length)fail();
  const identities=new Set(),codes=new Set(),cccds=new Set(),people=new Map();
@@ -485,7 +496,7 @@ function restore(raw){
  if(drawing){if(!BATCHES[s.roundIndex]||!Number.isFinite(Date.parse(s.roundStartedAt))||s.roundEndsAt!==Date.parse(s.roundStartedAt)+DRAW_MS||!Number.isSafeInteger(s.pendingAmount)||s.pendingAmount<0||s.pendingAmount>100_000_000_000)fail();s.pending=winners(s.pending,BATCHES[s.roundIndex].count)}else if(s.pending.length)fail();
  return s;
 }
-global.BatchEngine=Object.freeze({DRAW_MS,VERSION,CONFIG,BATCHES,create,index,choose,eligible,canStart,begin,finish,dismiss,next,snapshot,restore});
+global.BatchEngine=Object.freeze({DRAW_MS,VERSION,CONFIG_ID,CONFIG,BATCHES,create,index,choose,eligible,canStart,begin,finish,dismiss,next,snapshot,restore});
 })(typeof window==='undefined'?globalThis:window);
 
 </script>
@@ -530,6 +541,7 @@ const maskName=name=>name||'Nhân viên';
 const totalWinners=PRIZES.reduce((a,p)=>a+p.count,0);
 const state=Object.assign(BatchEngine.create(),{source:'',sheet:'',fingerprint:'',invalid:0,duplicated:0,awarded:new Set(),deadline:0,eligible:[],tickInterval:null,reelTick:0,projector:false,soundEnabled:true,musicEnabled:false,audioCtx:null,lastBeepSecond:-1,musicTimer:null,musicStep:0,musicTime:0,musicGain:null,musicUrl:null,musicAudio:null,audioNodes:new Set(),recoveryBlocked:false});
 let toastTimer=null;
+let recoveryBackup=null;
 function toast(msg,type='info'){
   el.toast.textContent=msg;el.toast.className='toast show '+type;
   clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.toast.className='toast',4700);
@@ -639,9 +651,14 @@ function restoreSession(){
   const storage=safeSessionStorage();if(!storage)return false;
   try{
     const raw=storage.getItem(STORAGE_KEY);
+    if(raw&&JSON.parse(raw).configId!==BatchEngine.CONFIG_ID){
+      recoveryBackup={raw,filename:'phien-cau-hinh-cu.json'};
+      $('#legacySessionBtn').textContent='↓ Xuất phiên cấu hình cũ';$('#legacySessionBtn').classList.remove('hidden');
+      state.recoveryBlocked=true;toast('Cấu hình đã đổi thành 5 lượt × 6 người. Hãy xuất phiên cấu hình cũ, lưu kết quả rồi xóa phiên để bắt đầu phiên mới.','error');return false;
+    }
     if(!raw){
       if(storage.getItem('lucky-draw-quyet-thang-2011-v3-tab-session')){
-        $('#legacySessionBtn').classList.remove('hidden');state.recoveryBlocked=true;toast('Có phiên v2.3 trong tab. Hãy chọn “Xuất phiên v2.3” để lưu bản cũ trước khi xóa phiên và dùng v2.4.','error');
+        recoveryBackup={raw:storage.getItem('lucky-draw-quyet-thang-2011-v3-tab-session'),filename:'phien-v2.3-can-kiem-tra.json'};$('#legacySessionBtn').textContent='↓ Xuất phiên v2.3';$('#legacySessionBtn').classList.remove('hidden');state.recoveryBlocked=true;toast('Có phiên v2.3 trong tab. Hãy chọn “Xuất phiên v2.3” để lưu bản cũ trước khi xóa phiên và dùng v2.4.','error');
       }
       return false;
     }
@@ -735,6 +752,12 @@ function startMusic(){
     schedule();state.musicTimer=setInterval(schedule,90);
   }catch(err){/* Optional soundtrack. */}
 }
+function nextBatchLabel(){
+  const next=BATCHES[state.roundIndex+1];
+  if(!next)return 'HOÀN TẤT CHƯƠNG TRÌNH';
+  if(currentBatch().key!==next.key)return 'Chuẩn bị quay '+PRIZES[next.tierIndex].name;
+  return 'Chuẩn bị lượt '+next.number+'/'+next.total;
+}
 function showReveal(){
   const last=state.completed.at(-1);if(!last)return;
   const tier=PRIZES.find(p=>p.key===last.tierKey),b=BATCHES[last.batchIndex];
@@ -744,7 +767,7 @@ function showReveal(){
   el.revealGrid.className='reveal-grid tier-'+last.winners.length;
   el.revealGrid.style.setProperty('--cols',String(last.winners.length));
   el.revealGrid.innerHTML=last.winners.map(p=>`<article class="reveal-person"><div class="reveal-person-code">${escapeHtml(displayCode(p))}</div><div class="reveal-person-name">${escapeHtml(maskName(p.name))}</div></article>`).join('');
-  el.revealNext.textContent=state.roundIndex===BATCHES.length-1?'HOÀN TẤT CHƯƠNG TRÌNH →':'CHUẨN BỊ LƯỢT TIẾP THEO →';
+  el.revealNext.textContent=nextBatchLabel();
   el.reveal.classList.toggle('grand-prize',last.tierKey==='first');
   el.reveal.classList.remove('hidden');el.shell.classList.add('revealing');
 }
@@ -802,7 +825,7 @@ function renderStage(){
     el.count.textContent='KÍNH CHÚC CÁC THẦY CÔ SỨC KHỎE, HẠNH PHÚC VÀ THÀNH CÔNG';
     el.draw.disabled=true;return;
   }
-  el.round.textContent=`LƯỢT QUAY ${String(state.roundIndex+1).padStart(2,'0')} / 14`;
+  el.round.textContent=`LƯỢT QUAY ${String(state.roundIndex+1).padStart(2,'0')} / ${BATCHES.length}`;
   el.title.textContent=tier.stage;el.value.innerHTML=money(tier.amount)+' <span>VNĐ / GIẢI</span>';
   el.count.textContent=batchLabel(b)+' · '+b.count+' NHÂN VIÊN MAY MẮN';
   $('#stageBatch').textContent=batchLabel(b);
@@ -811,7 +834,7 @@ function renderStage(){
   if(state.running){el.draw.disabled=true;el.drawText.textContent='ĐANG QUAY THƯỞNG…';el.timerSub.textContent='CHỜ KHOẢNH KHẮC MAY MẮN';return}
   if(state.roundFinished){
     updateTimer(0);el.timerSub.textContent='ĐÃ CÔNG BỐ';el.reel.textContent='✦ CHÚC MỪNG ✦';
-    el.draw.disabled=state.recoveryBlocked;el.drawText.textContent=state.roundIndex===BATCHES.length-1?'HOÀN TẤT CHƯƠNG TRÌNH':'CHUẨN BỊ LƯỢT TIẾP THEO';return;
+    el.draw.disabled=state.recoveryBlocked;el.drawText.textContent=nextBatchLabel();return;
   }
   updateTimer(DRAW_MS);el.timerSub.textContent='CHỜ BẮT ĐẦU';el.reel.textContent='✦ ✦ ✦';
   el.draw.disabled=!canStart();el.drawText.textContent=canStart()?'BẮT ĐẦU QUAY • 10 GIÂY':state.recoveryBlocked?'CẦN KIỂM TRA PHIÊN':'NHẬP DANH SÁCH ĐỂ BẮT ĐẦU';el.hint.textContent='';
@@ -820,7 +843,7 @@ function renderStage(){
 function discardDrawSession(){
   clearInterval(state.tickInterval);stopMusic();stopCountdown();state.tickInterval=null;
   Object.assign(state,BatchEngine.create(),{source:'',sheet:'',fingerprint:'',invalid:0,duplicated:0,recoveryBlocked:false});
-  state.awarded=new Set();state.eligible=[];$('#legacySessionBtn').classList.add('hidden');el.reveal.classList.add('hidden');el.shell.classList.remove('revealing');
+  recoveryBackup=null;state.awarded=new Set();state.eligible=[];$('#legacySessionBtn').classList.add('hidden');el.reveal.classList.add('hidden');el.shell.classList.remove('revealing');
   el.resultHeading.textContent='Danh sách may mắn';
 }
 
@@ -944,7 +967,7 @@ function auditPayload(){
   return {
     app:'Lucky Draw • Quyết Thắng 20/11/2026 — offline',version:'2.4.0',eventName:el.name.value.trim(),createdAt:state.startedAt||nowIso(),exportedAt:nowIso(),
     dataSource:{name:state.source,sheet:state.sheet,uniqueCount:state.people.length,excludedInvalid:state.invalid,excludedDuplicates:state.duplicated,sha256OfSortedIdentifiers:state.fingerprint},
-    rules:{method:'window.crypto.getRandomValues() + rejection sampling + partial Fisher-Yates; without replacement',drawDurationSeconds:DRAW_MS/1000,drawOrder:PRIZES.map(p=>p.name),repeatWinner:false,totalBatches:BATCHES.length,totalWinners,totalPrizeValueVND:totalBudget(),
+    rules:{configurationId:BatchEngine.CONFIG_ID,method:'window.crypto.getRandomValues() + rejection sampling + partial Fisher-Yates; without replacement',drawDurationSeconds:DRAW_MS/1000,drawOrder:PRIZES.map(p=>p.name),repeatWinner:false,totalBatches:BATCHES.length,totalWinners,totalPrizeValueVND:totalBudget(),
       note:'Log kỹ thuật phía trình duyệt, không phải biên bản có chữ ký số và không tự chứng minh được tính toàn vẹn chống sửa đổi.'},
     rounds:state.completed.map((round,i)=>({order:i+1,batchNumber:round.batchNumber,batchesInTier:round.batchTotal,prize:PRIZES.find(p=>p.key===round.tierKey).name,quantity:round.winners.length,amountPerWinnerVND:round.amount,eligibleBeforeDraw:round.poolSize,startedAt:round.startedAt,revealedAt:round.finishedAt,winners:round.winners.map((w,index)=>({position:index+1,batchNumber:round.batchNumber,batchOrder:round.batchIndex+1,prizeAmountVND:round.amount,cccd:w.cccd||'',name:w.name,employeeCode:w.code||'',department:w.department||'',identifier:w.id}))}))
   };
@@ -983,7 +1006,7 @@ function bind(){
   el.export.addEventListener('click',async()=>{if(!guard())return;try{await ExcelLocal.makeXlsx(resultRows(), 'ket-qua-quyet-thang-20-11-2026.xlsx','KetQuaTrungThuong');toast('Đã xuất kết quả Excel. Nếu có CCCD, hãy lưu file an toàn.','success')}catch(err){toast(err.message,'error')}});
   el.audit.addEventListener('click',()=>{if(!guard())return;downloadJson(auditPayload(),'nhat-ky-quyet-thang-20-11-2026.json');toast('Đã xuất nhật ký. File có thể chứa CCCD đầy đủ.','success')});
   el.reset.addEventListener('click',reset);
-  $('#legacySessionBtn').addEventListener('click',()=>{const raw=safeSessionStorage()?.getItem('lucky-draw-quyet-thang-2011-v3-tab-session');if(raw){let old;try{old=JSON.parse(raw)}catch(err){old=raw}downloadJson(old,'phien-v2.3-can-kiem-tra.json')}});
+  $('#legacySessionBtn').addEventListener('click',()=>{const raw=recoveryBackup?.raw;if(raw){let old;try{old=JSON.parse(raw)}catch(err){old=raw}downloadJson(old,recoveryBackup.filename)}});
   el.revealClose.addEventListener('click',hideReveal);
   el.revealNext.addEventListener('click',nextRound);
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!el.reveal.classList.contains('hidden'))hideReveal()});

@@ -8,13 +8,13 @@ Website: [dungnc7.github.io/lucky-draw-quyet-thang-20-11](https://dungnc7.github
 
 | Hạng giải | Tổng người | Người/lượt | Số lượt | Thời gian/lượt |
 |---|---:|---:|---:|---:|
-| Khuyến khích | 30 | 5 | 6 | 10 giây |
+| Khuyến khích | 30 | 6 | 5 | 10 giây |
 | Tư | 8 | 4 | 2 | 10 giây |
 | Ba | 3 | 1 | 3 | 10 giây |
 | Nhì | 2 | 1 | 2 | 10 giây |
 | Nhất | 1 | 1 | 1 | 10 giây |
 
-Tổng 44 người khác nhau, 14 lượt, 140 giây đếm ngược; thời gian MC chuẩn bị giữa các lượt không tính vào tổng này. Trình duyệt công bố ở lần xử lý timer đầu tiên tại/sau mốc 10.000 ms; không thể bảo đảm độ chính xác thời gian thực của hệ điều hành.
+Tổng 44 người khác nhau, 13 lượt, 130 giây đếm ngược; thời gian MC chuẩn bị giữa các lượt không tính vào tổng này. Trình duyệt công bố ở lần xử lý timer đầu tiên tại/sau mốc 10.000 ms; không thể bảo đảm độ chính xác thời gian thực của hệ điều hành.
 
 ## Vận hành
 
@@ -33,6 +33,8 @@ Người được chọn, thời điểm kết thúc, tiền giải và trạng 
 Mỗi tab/trình duyệt là phiên **độc lập**, không có đồng bộ thiết bị. Dữ liệu có thể mất khi đóng tab, dùng chế độ riêng tư hoặc xóa bộ nhớ. Không đổi máy, đóng tab hay chỉnh đồng hồ hệ thống giữa lượt. Đây không phải hệ thống kiểm toán chống sửa đổi hoặc biên bản ký số.
 
 Phiên v2.3 có cấu hình khác nên không được tự chuyển sang v2.4. Nếu phát hiện phiên cũ, ứng dụng khóa bắt đầu và cung cấp **Xuất phiên v2.3** để tải bản JSON lưu trữ cũ. Kiểm tra/lưu bản này trước khi chủ động xóa phiên. Không trộn kết quả hai phiên bản.
+
+Cấu hình khuyến khích hiện tại là **5 lượt × 6 người** (Lượt 1/5 đến 5/5), bố cục 3 cột × 2 hàng trên màn hình lớn và 2 cột trên điện thoại. Sau lượt 5/5, nút **Chuẩn bị quay Giải tư** chỉ chuẩn bị; quản trị viên phải nhấn bắt đầu riêng. Phiên v2.4 lưu trước lần cập nhật cấu hình này được khóa tiếp tục và có nút **Xuất phiên cấu hình cũ**. Hãy lưu bản sao trước khi chủ động xóa phiên để bắt đầu cấu hình mới.
 
 ## Quyền riêng tư
 

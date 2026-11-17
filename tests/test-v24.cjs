@@ -22,14 +22,14 @@ const people=()=>Array.from({length:120},(_,i)=>({id:'EMP:TEST'+i,code:'TEST'+i,
 const plain=x=>JSON.parse(JSON.stringify(x));
 function ready(f){const s=f.E.create();s.people=people();return s}
 const persist=()=>{};
-test('configuration: 14 batches / 44 winners / 140 seconds, correct tier order',()=>{
- const {E}=fixture();assert.equal(E.DRAW_MS,10000);assert.equal(E.BATCHES.length,14);assert.equal(E.BATCHES.reduce((a,b)=>a+b.count,0),44);assert.equal(E.BATCHES.length*E.DRAW_MS,140000);
- assert.deepEqual(plain(E.BATCHES.map(b=>b.count)),[5,5,5,5,5,5,4,4,1,1,1,1,1,1]);
- assert.deepEqual(plain(E.BATCHES.map(b=>b.key)),[...Array(6).fill('encouragement'),...Array(2).fill('fourth'),...Array(3).fill('third'),...Array(2).fill('second'),'first']);
+test('configuration: 13 batches / 44 winners / 130 seconds, correct tier order',()=>{
+ const {E}=fixture();assert.equal(E.DRAW_MS,10000);assert.equal(E.BATCHES.length,13);assert.equal(E.BATCHES.reduce((a,b)=>a+b.count,0),44);assert.equal(E.BATCHES.length*E.DRAW_MS,130000);
+ assert.deepEqual(plain(E.BATCHES.map(b=>b.count)),[6,6,6,6,6,4,4,1,1,1,1,1,1]);
+ assert.deepEqual(plain(E.BATCHES.map(b=>b.key)),[...Array(5).fill('encouragement'),...Array(2).fill('fourth'),...Array(3).fill('third'),...Array(2).fill('second'),'first']);
 });
 test('all batches: unique eligible employees, exact allocations, no auto-start, double-click guards',()=>{
  const f=fixture(),{E}=f,s=ready(f);let saved;
- for(let i=0;i<14;i++){
+ for(let i=0;i<13;i++){
   assert.equal(E.begin(s,200000,x=>{saved=E.snapshot(x)},f.now()),true);
   assert.equal(saved.phase,'DRAWING');assert.equal(s.roundEndsAt-f.now(),10000);
   assert.equal(E.begin(s,200000,persist,f.now()),false);assert.equal(E.finish(s,persist,f.now()+9999),false);
@@ -73,20 +73,22 @@ test('CSV and employee parser: code/CCCD validation, normalization, deduplicatio
  const id='0'.repeat(12);const c=f.app.parseCustomers([['CCCD','Họ tên'],[id,'Giả lập'],[id,'Trùng']]);assert.equal(c.people.length,1);assert.equal(c.duplicate,1);
  assert.throws(()=>f.app.parseCustomers([['Sai cột'],['value']]));
 });
-test('integrated UI: edits/budget before start, locks once begun, 14 batches, exports batch/amount',async()=>{
+test('integrated UI: edits/budget before start, locks once begun, 13 batches, exports batch/amount',async()=>{
  const f=fixture(),{app}=f;await app.loadCustomers([['Mã nhân viên','Họ tên'],...people().map(p=>[p.code,p.name])],'SYNTHETIC TEST','Test');
  assert.equal(app.canChangePrizes(),true);
  app.changePrizeAmount({matches:()=>true,dataset:{prizeKey:'encouragement'},value:'300.000'});assert.equal(app.PRIZES[0].amount,300000);assert.equal(f.el('#totalPrizeValue').textContent,'23.000.000 ₫');
- for(let i=0;i<14;i++){
+ for(let i=0;i<13;i++){
   app.startRound();app.startRound();assert.equal(app.canChangePrizes(),false);assert.equal(app.state.pending.length,f.E.BATCHES[i].count);
   app.changePrizeAmount({matches:()=>true,dataset:{prizeKey:'encouragement'},value:'1'});assert.equal(app.PRIZES[0].amount,300000);
   f.advance(9999);app.drawTick();assert.equal(app.state.running,true);f.advance(1);app.drawTick();app.finishRound();
   assert.equal(app.state.completed.length,i+1);assert.equal(app.state.phase,'REVEAL');assert.equal((f.el('#revealGrid').innerHTML.match(/class="reveal-person"/g)||[]).length,f.E.BATCHES[i].count);
   assert.doesNotMatch(f.el('#revealGrid').innerHTML,/department|CCCD/);
+  if(i===4){assert.equal(f.el('#revealNext').textContent,'Chuẩn bị quay Giải tư');assert.equal(f.el('#drawBtnText').textContent,'Chuẩn bị quay Giải tư')}
+  if(i<5)assert.equal(f.el('#revealBatch').textContent,`LƯỢT ${i+1}/5`);
   app.hideReveal();assert.equal(app.state.phase,'WAITING_NEXT_BATCH');app.nextRound();
  }
- assert.equal(app.state.phase,'COMPLETED');const rows=app.resultRows();assert.equal(rows.length,45);assert.deepEqual(plain(rows[0].slice(0,5)),['STT','Hạng giải','Lượt trong hạng','Lượt toàn chương trình','Giá trị giải (VNĐ)']);assert.equal(rows[1][4],300000);assert.equal(rows.at(-1)[3],14);
- const audit=app.auditPayload();assert.equal(audit.version,'2.4.0');assert.equal(audit.rounds.length,14);assert.equal(audit.rounds[0].amountPerWinnerVND,300000);assert.equal(audit.rules.drawDurationSeconds,10);assert.equal(audit.rounds[0].winners[0].prizeAmountVND,300000);assert.equal(audit.rounds[0].winners[0].batchNumber,1);
+ assert.equal(app.state.phase,'COMPLETED');const rows=app.resultRows();assert.equal(rows.length,45);assert.deepEqual(plain(rows[0].slice(0,5)),['STT','Hạng giải','Lượt trong hạng','Lượt toàn chương trình','Giá trị giải (VNĐ)']);assert.equal(rows[1][4],300000);assert.equal(rows.at(-1)[3],13);
+ const audit=app.auditPayload();assert.equal(audit.version,'2.4.0');assert.equal(audit.rules.configurationId,'v2.4-consolation-5x6');assert.equal(audit.rounds.length,13);assert.equal(audit.rounds[0].amountPerWinnerVND,300000);assert.equal(audit.rules.drawDurationSeconds,10);assert.equal(audit.rounds[0].winners[0].prizeAmountVND,300000);assert.equal(audit.rounds[0].winners[0].batchNumber,1);
 });
 test('integrated refresh in progress/after reveal and old v2.3 protection',async()=>{
  const f=fixture();await f.app.loadCustomers([['Mã nhân viên','Họ tên'],...people().map(p=>[p.code,p.name])],'TEST','Test');f.app.startRound();const pending=plain(f.app.state.pending);const raw=f.storage.get('lucky-draw-quyet-thang-2011-v4-tab-session');
@@ -119,4 +121,18 @@ test('drag-and-drop import binding accepts a synthetic CSV and validates file si
  f.el('#dropZone').events.drop({preventDefault(){prevented++},stopPropagation(){},dataTransfer:{files:[file]}});
  await new Promise(resolve=>setImmediate(resolve));await new Promise(resolve=>setImmediate(resolve));assert.equal(prevented,1);assert.equal(f.app.state.people.length,120);
  await assert.rejects(f.context.ExcelLocal.parseFile({name:'large.xlsx',size:16*1024*1024}),/15MB/);
+});
+
+test('previous batch configuration is blocked and preserved for local backup',()=>{
+ const f=fixture(),s=ready(f);f.E.begin(s,200000,persist,f.now());const old=plain(f.E.snapshot(s));delete old.configId;old.pending=old.pending.slice(0,5);
+ assert.throws(()=>f.E.restore(old),/Cấu hình phiên đã thay đổi/);
+ const raw=JSON.stringify(old),key='lucky-draw-quyet-thang-2011-v4-tab-session';f.storage.set(key,raw);assert.equal(f.app.restoreSession(),false);assert.equal(f.app.state.recoveryBlocked,true);assert.equal(f.app.canStart(),false);assert.equal(f.storage.get(key),raw);assert.equal(f.el('#legacySessionBtn').textContent,'↓ Xuất phiên cấu hình cũ');
+});
+test('new configuration pending six winners restores identically at all 13 batch boundaries',()=>{
+ const f=fixture(),{E}=f;let s=ready(f);
+ for(let i=0;i<13;i++){
+  E.begin(s,100+i,persist,f.now());const pending=plain(s.pending);s=E.restore(E.snapshot(s));assert.deepEqual(plain(s.pending),pending);assert.equal(s.pending.length,E.BATCHES[i].count);
+  f.advance(10000);E.finish(s,persist,f.now());s=E.restore(E.snapshot(s));E.next(s,persist);s=E.restore(E.snapshot(s));
+ }
+ assert.equal(s.completed.length,13);assert.equal(s.completed.flatMap(r=>r.winners).length,44);assert.equal(s.phase,'COMPLETED');
 });

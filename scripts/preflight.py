@@ -29,6 +29,8 @@ scripts = re.findall(r'<script[^>]*>(.*?)</script>', content, re.S)
 checks = {
     'v2.4 title': '<title>Lucky Draw v2.4' in content,
     'Vietnamese Teachers Day heading': 'CHƯƠNG TRÌNH QUAY THƯỞNG NGÀY NHÀ GIÁO VIỆT NAM 20/11' in content,
+    'final consolation configuration': "key:'encouragement',count:30,batchSize:6" in content and "configId:CONFIG_ID" in content,
+    'no obsolete consolation progress': 'LƯỢT 1/6' not in content and ' / 14`' not in content,
     'fixed 10-second engine': bool(re.search(r'const DRAW_MS=10_000', content)),
     'embedded original logo': 'data:image/png;base64,' in content,
     'inline engine and three preserved application/library scripts': len(scripts) == 4,

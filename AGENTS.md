@@ -5,11 +5,11 @@ Upgrade the existing v2.3 application to v2.4; the latest explicit v2.4 request 
 
 ## Release contract
 - Repository: `dungnc7/lucky-draw-quyet-thang-20-11`, PUBLIC. Pages: `main`, `/(root)`.
-- Exactly 14 manually triggered batches, 10,000 ms each, 44 unique winners: 6×5 encouragement, 2×4 fourth, 3×1 third, 2×1 second, 1×1 first.
+- Exactly 13 manually triggered batches, 10,000 ms each, 44 unique winners: 5×6 encouragement, 2×4 fourth, 3×1 third, 2×1 second, 1×1 first.
 - Cryptographic rejection sampling; persist before draw/reveal/progression. Never reselect a pending batch after refresh. Fail closed if persistence is unavailable.
 - Lock prize amounts from the first started draw. Snapshot selected monetary value in results and audit exports.
 - Winner cards show only employee code and name; never CCCD or department. CCCD-only imports receive a local row reference for presentation.
-- Keep old v2.3 sessions separate. Offer a local backup; never silently reinterpret old outcomes as v2.4 batches.
+- Validate the configuration identifier on every restore; back up older incompatible v2.4 sessions locally before reset. Keep old v2.3 sessions separate. Offer a local backup; never silently reinterpret old outcomes as v2.4 batches.
 - Never commit real participant data, CCCD, results, runtime storage, Excel/CSV files, credentials or downloaded test exports. Test with synthetic data only; keep fixtures and screenshots outside the repository.
 - Do not force push or replace unrelated history/configuration. Do not assume private repositories can host Pages on the current plan.
 - Before committing: run `python3 scripts/preflight.py` and `node --test tests/test-v24.cjs`; perform browser smoke testing when available.
