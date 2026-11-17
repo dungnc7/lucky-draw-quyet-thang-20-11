@@ -1,0 +1,10 @@
+.DS_Store
+Thumbs.db
+node_modules/
+*.xlsx
+*.xls
+*.xlsm
+*.csv
+ket-qua*
+nhat-ky*
+*.log
