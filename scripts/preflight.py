@@ -12,7 +12,7 @@ ALLOWED = {
     '.gitignore', '.nojekyll', 'AGENTS.md', 'CODEX_DEPLOY_TASK.md',
     'LICENSE-JSZIP.txt', 'PUBLISH.md', 'README.md', 'index.html',
     'scripts/preflight.py', 'tests/test-v24.cjs',
-    'docs/ARCHITECTURE.md', 'docs/QA_V2_4.md',
+    'docs/ARCHITECTURE.md', 'docs/QA_V2_4.md', 'docs/QA_V2_6.md', 'docs/MASTER_PROMPT_V2_6.md',
 }
 errors = []
 for path in ROOT.rglob('*'):
@@ -27,14 +27,15 @@ for name in ALLOWED:
 content = (ROOT / 'index.html').read_text(encoding='utf-8')
 scripts = re.findall(r'<script[^>]*>(.*?)</script>', content, re.S)
 checks = {
-    'v2.4 title': '<title>Lucky Draw v2.4' in content,
+    'v2.6 title': '<title>Lucky Draw Event Platform v2.6' in content,
     'Vietnamese Teachers Day heading': 'CHƯƠNG TRÌNH QUAY THƯỞNG NGÀY NHÀ GIÁO VIỆT NAM 20/11' in content,
     'final consolation configuration': "key:'encouragement',count:30,batchSize:6" in content and "configId:CONFIG_ID" in content,
     'no obsolete consolation progress': 'LƯỢT 1/6' not in content and ' / 14`' not in content,
+    'corporate default and branding': "DEFAULT_THEME_ID='quyet-thang-corporate'" in content and all(c in content for c in ['#2E7BC3','#F2363F','#0D1B3D']),
     'fixed 10-second engine': bool(re.search(r'const DRAW_MS=10_000', content)),
     'embedded original logo': 'data:image/png;base64,' in content,
-    'inline engine and three preserved application/library scripts': len(scripts) == 4,
-    'no old draw duration or obsolete headings': not re.search(r'15_?000|5_000|YEAR END PARTY|LỄ TRI ÂN', '\n'.join(scripts[1:]).upper()),
+    'inline draw/event modules and preserved application/library scripts': len(scripts) == 5,
+    'no old draw duration or obsolete headings': not re.search(r'15_?000|5_000|LỄ TRI ÂN', '\n'.join(scripts[1:]).upper()),
     'no executable network API in app': not re.search(r'\b(fetch|XMLHttpRequest|WebSocket|sendBeacon)\s*\(', '\n'.join(scripts[1:])),
 }
 for name, passed in checks.items():
@@ -71,4 +72,4 @@ except FileNotFoundError:
 if errors:
     print('PRE-FLIGHT FAILED:\n' + '\n'.join(' - ' + error for error in errors))
     sys.exit(1)
-print('PRE-FLIGHT PASSED: exact public-source allowlist, privacy scan, inline assets, v2.4 configuration and 4 JavaScript syntax checks')
+print('PRE-FLIGHT PASSED: exact public-source allowlist, privacy scan, inline assets, v2.6 themes, approved draw configuration and 5 JavaScript syntax checks')

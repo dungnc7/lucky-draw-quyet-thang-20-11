@@ -1,3 +1,5 @@
+> Historical validation of the v2.4 configuration. Current release evidence is in QA_V2_6.md.
+
 # v2.4 final batch configuration — validation
 
 Baseline: `73d6d60d5728c7bb77c43cb9c4bb9f4cdd23adc7`. This scoped update changes consolation only to 5 batches × 6 people. Other prize counts, amounts, 10-second countdown, audio, Excel importer/writer and ceremony theme are preserved.

@@ -1,7 +1,14 @@
 # Lucky Draw Quyết Thắng — engineering rules
 
 ## Current owner request
-Upgrade the existing v2.3 application to v2.4; the latest explicit v2.4 request supersedes the previous instruction to preserve the 15-second, single-batch UI. Maintain the working importer, exporter, company logo, monetary configuration, independent audio and standalone HTML architecture.
+Implement v2.6 from approved v2.4 baseline 696a734. On 2026-11-18 the owner explicitly authorized extending v2.4 and creating a first registry of seven themes because no v2.6 source/registry existed. Preserve the draw engine, importer/writer, original logo, prize amounts and audio code.
+
+## Theme and event contract
+- Default `appearance.themeId`: `quyet-thang-corporate` (Sắc Màu Quyết Thắng), blue #2E7BC3 / red #F2363F / navy #0D1B3D.
+- Three presets: teachers-day, year-end, custom. Content and appearance remain independent.
+- Registry IDs: quyet-thang-corporate, lotus, midnight-gold, emerald, royal-purple, ocean, crimson. All remain selectable; valid saved choices must never be replaced by the default.
+- Persist content/theme metadata separately from per-event tab-local runtime/rosters/results. New-event creation must not edit an existing event.
+- Corporate styling covers Admin, Stage, Winner Reveal and Completed. No Teachers' Day text in Year End Party event output.
 
 ## Release contract
 - Repository: `dungnc7/lucky-draw-quyet-thang-20-11`, PUBLIC. Pages: `main`, `/(root)`.

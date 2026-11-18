@@ -1,15 +1,16 @@
-# v2.4 architecture
+# v2.6 architecture
 
 Baseline: v2.3 commit `56758e5b2ba66f7517611b0d81280608a3bd709e`. The existing app is extended; the importer, writer, embedded company logo and synthesized music are preserved.
 
 ## Runtime
 
-`index.html` remains the sole runtime artifact, with four inline script blocks:
+`index.html` remains the sole runtime artifact, with five inline script blocks:
 
 1. Unmodified JSZip 3.10.1.
 2. Existing ExcelLocal CSV/OOXML reader/writer. Native browser DOMParser reads worksheets and shared strings; exported string cells are inline text, not formulas.
 3. BatchEngine: pure transitions and validation; configured batches are immutable. `roundIndex` now means global batch index 0–12; each entry resolves tier, per-tier batch number/total and winner count. No tier indexing by batch index.
-4. Existing UI/controller, adapted to batch metadata, amount snapshots, recovery and the new ceremony theme. All application assets are embedded and system fonts are used.
+4. EventPlatform: first theme/preset registry and metadata model added with explicit owner approval; seven themes and three presets, independent content/appearance.
+5. Existing UI/controller, adapted to batch metadata, amount snapshots, recovery, event switching and CSS theme tokens. All application assets are embedded and system fonts are used.
 
 ## State transitions
 
@@ -29,12 +30,24 @@ Storage unavailable/quota failure blocks a start before animation. Failed comple
 
 ## Presentation and audio
 
-Theme: burgundy #711E35, champagne #E8BF75, navy #101D39, ivory #FFF7E9. Original book SVG, subtle CSS particles, reduced-motion support. Admin shows batch, remaining batches/eligible people. Presentation hides technical/admin content, centers 1/4/6 cards (six-card reveal is 3 columns × 2 rows on 16:9, 2 columns on mobile), adds gold effects for the first prize, and has a minimal completed screen. Winner cards have exactly code and name, with row-reference aliases for CCCD-only participants.
+Default theme: Sắc Màu Quyết Thắng (`quyet-thang-corporate`), primary #2E7BC3, secondary #F2363F, background #0D1B3D. Six other themes share the same token layer. Original book SVG, subtle CSS particles, reduced-motion support. Admin shows batch, remaining batches/eligible people. Presentation hides technical/admin content, centers 1/4/6 cards (six-card reveal is 3 columns × 2 rows on 16:9, 2 columns on mobile), adds gold effects for the first prize, and has a minimal completed screen. Winner cards have exactly code and name, with row-reference aliases for CCCD-only participants.
 
 Web Audio is created after interaction. Countdown voices are tracked and stopped between beats, on toggle and at completion. 10–4 use normal pulses; 3–1 intensify. Music has separate controls and gain/output; custom local tracks are optional and never uploaded. Native fullscreen is requested, with browser fullscreen as fallback when the host denies the API.
 
 ## Development and privacy
 
-`tests/test-v24.cjs` extracts the actual bundled engine/controller/library, runs pure engine and controller scenarios in Node VM with an explicitly fake clock/DOM/audio/storage, and validates OOXML ZIP output. It does not impersonate a browser rendering test. Browser smoke evidence is separately recorded in QA_V2_4.md. `scripts/preflight.py` enforces an exact public-file allowlist, asset embedding, privacy/credential checks and JS syntax.
+`tests/test-v24.cjs` extracts the actual bundled engine/controller/library, runs pure engine and controller scenarios in Node VM with an explicitly fake clock/DOM/audio/storage, and validates OOXML ZIP output. It does not impersonate a browser rendering test. Browser smoke evidence is separately recorded in QA_V2_6.md. `scripts/preflight.py` enforces an exact public-file allowlist, asset embedding, privacy/credential checks and JS syntax.
 
 No runtime data or test exports are stored in the source repository. The public frontend does not provide centralized state, authentication or tamper-proof auditing; operators keep local exports confidential.
+
+## Event data and backward compatibility
+
+Baseline for this extension is 696a734. There was no previous v2.6 event/theme registry; the owner authorized the first seven-theme registry on 2026-11-18. JSZip, ExcelLocal, BatchEngine, audio functions and logo payloads remain byte-identical to baseline.
+
+`EventPlatform.createEvent/normalize` fills appearance.themeId only when missing/invalid; a valid saved ID, including lotus, survives. Other event/appearance fields are preserved. Preset content is a separate object; changing preset never chooses a theme. New-event preset selection is separate from editing the current preset.
+
+Catalog metadata (IDs, preset, content, appearance) uses localStorage with sessionStorage fallback. Persist-before-update applies to catalog mutations, including theme changes. A stored-revision check rejects stale catalog edits from another tab; there is no multi-tab synchronization protocol. Corrupt catalogs fail closed and are not overwritten.
+
+Runtime rosters/results and prize settings remain in per-event sessionStorage keys. The first `legacy-event` uses the original v2.4 keys and configuration validator, retaining compatible pending winners and title. New events have distinct runtime/price keys and the same approved rules/default amounts. Event switching is blocked while drawing or while recovery needs attention. It saves the current runtime before activating another event. Theme changes are allowed without calling draw transitions, changing audio flags or restarting timers.
+
+A single CSS token layer controls all four screens; content fields render the title, occasion, kicker, brand label and completion copy independently. Decorative stage-card overflow uses `clip` to prevent internal focus scrolling from hiding the prize title. Audit exports include eventId, presetId and appearance; filenames derive from the current event rather than a fixed Teachers' Day date. No backend, external media or packages are added.

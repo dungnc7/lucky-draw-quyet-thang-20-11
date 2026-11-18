@@ -13,10 +13,10 @@ function fixture(){
  const el=id=>{if(!els.has(id))els.set(id,element());return els.get(id)};
  const context=vm.createContext({console,crypto:webcrypto,Uint32Array,Uint8Array,ArrayBuffer,Blob,TextEncoder,TextDecoder,Date:class extends Date{constructor(...args){super(...(args.length?args:[clock]))}static now(){return clock}},performance:{now:()=>clock},setInterval:()=>++interval,clearInterval(){},setTimeout:(fn,ms,...args)=>setTimeout(fn,0,...args),clearTimeout,URL:{createObjectURL:()=> 'blob:test',revokeObjectURL(){}},sessionStorage:{getItem:k=>storage.get(k)||null,setItem(k,v){storage.set(k,v)},removeItem:k=>storage.delete(k)},document:{querySelector:el,addEventListener(){},createElement:element,body:{appendChild(){}},documentElement:{}},confirm:()=>true,addEventListener(){}});
  context.window=context;context.globalThis=context;
- vm.runInContext(scripts[0],context);vm.runInContext(scripts[1],context);vm.runInContext(scripts[2],context);
- vm.runInContext(scripts[3].replace(/\ninit\(\);/,`\nglobalThis.api={state,PRIZES,parseCustomers,parsePrizeAmount,loadCustomers,startRound,finishRound,nextRound,drawTick,restoreSession,persistState,canChangePrizes,changePrizeAmount,renderStage,showReveal,hideReveal,resultRows,auditPayload,bind,canStart,discardDrawSession};`),context);
+ vm.runInContext(scripts[0],context);vm.runInContext(scripts[1],context);vm.runInContext(scripts[2],context);vm.runInContext(scripts[3],context);
+ vm.runInContext(scripts[4].replace(/\ninit\(\);/,`\nglobalThis.api={state,PRIZES,parseCustomers,parsePrizeAmount,loadCustomers,startRound,finishRound,nextRound,drawTick,restoreSession,persistState,canChangePrizes,changePrizeAmount,renderStage,showReveal,hideReveal,resultRows,auditPayload,bind,canStart,discardDrawSession,initEvents,changeEventTheme,selectPreset,switchEvent,createNewEvent,saveEventTitle,renderEventContent,renderEventControls,getEvent:()=>activeEvent,getCatalog:()=>catalog};`),context);
  el('#eventName').value='TEST — SYNTHETIC ONLY';
- return {context,E:context.BatchEngine,app:context.api,storage,el,advance:ms=>clock+=ms,now:()=>clock};
+ return {context,P:context.EventPlatform,E:context.BatchEngine,app:context.api,storage,el,advance:ms=>clock+=ms,now:()=>clock};
 }
 const people=()=>Array.from({length:120},(_,i)=>({id:'EMP:TEST'+i,code:'TEST'+i,cccd:'',name:'Nhân viên giả lập '+i,department:'Test'}));
 const plain=x=>JSON.parse(JSON.stringify(x));
@@ -88,7 +88,7 @@ test('integrated UI: edits/budget before start, locks once begun, 13 batches, ex
   app.hideReveal();assert.equal(app.state.phase,'WAITING_NEXT_BATCH');app.nextRound();
  }
  assert.equal(app.state.phase,'COMPLETED');const rows=app.resultRows();assert.equal(rows.length,45);assert.deepEqual(plain(rows[0].slice(0,5)),['STT','Hạng giải','Lượt trong hạng','Lượt toàn chương trình','Giá trị giải (VNĐ)']);assert.equal(rows[1][4],300000);assert.equal(rows.at(-1)[3],13);
- const audit=app.auditPayload();assert.equal(audit.version,'2.4.0');assert.equal(audit.rules.configurationId,'v2.4-consolation-5x6');assert.equal(audit.rounds.length,13);assert.equal(audit.rounds[0].amountPerWinnerVND,300000);assert.equal(audit.rules.drawDurationSeconds,10);assert.equal(audit.rounds[0].winners[0].prizeAmountVND,300000);assert.equal(audit.rounds[0].winners[0].batchNumber,1);
+ const audit=app.auditPayload();assert.equal(audit.version,'2.6.0');assert.equal(audit.rules.configurationId,'v2.4-consolation-5x6');assert.equal(audit.rounds.length,13);assert.equal(audit.rounds[0].amountPerWinnerVND,300000);assert.equal(audit.rules.drawDurationSeconds,10);assert.equal(audit.rounds[0].winners[0].prizeAmountVND,300000);assert.equal(audit.rounds[0].winners[0].batchNumber,1);
 });
 test('integrated refresh in progress/after reveal and old v2.3 protection',async()=>{
  const f=fixture();await f.app.loadCustomers([['Mã nhân viên','Họ tên'],...people().map(p=>[p.code,p.name])],'TEST','Test');f.app.startRound();const pending=plain(f.app.state.pending);const raw=f.storage.get('lucky-draw-quyet-thang-2011-v4-tab-session');
@@ -135,4 +135,82 @@ test('new configuration pending six winners restores identically at all 13 batch
   f.advance(10000);E.finish(s,persist,f.now());s=E.restore(E.snapshot(s));E.next(s,persist);s=E.restore(E.snapshot(s));
  }
  assert.equal(s.completed.length,13);assert.equal(s.completed.flatMap(r=>r.winners).length,44);assert.equal(s.phase,'COMPLETED');
+});
+
+// v2.6 event/theme tests use the same real bundled modules/controller as the draw regressions.
+test('v2.6: all three presets default to corporate without sharing event content',()=>{
+ const {P}=fixture();assert.equal(P.PRESETS.length,3);
+ for(const preset of P.PRESETS){const e=P.createEvent(preset.id,'event-'+preset.id);assert.equal(e.appearance.themeId,'quyet-thang-corporate');assert.equal(e.content.title,preset.content.title)}
+ const year=P.createEvent('year-end','year');assert.match(year.content.title,/YEAR END PARTY/);assert.doesNotMatch(JSON.stringify(year.content),/20\/11|NHÀ GIÁO|THẦY CÔ|tri thức/i);
+ const custom=P.createEvent('custom','custom');assert.doesNotMatch(JSON.stringify(custom.content),/20\/11|NHÀ GIÁO/i);
+});
+test('v2.6: exactly seven distinct selectable theme IDs and corporate brand palette',()=>{
+ const {P}=fixture();assert.equal(P.THEMES.length,7);assert.equal(new Set(P.THEMES.map(t=>t.id)).size,7);assert.ok(P.validTheme('lotus'));
+ const corporate=P.THEMES.find(t=>t.id===P.DEFAULT_THEME_ID);assert.equal(corporate.name,'Sắc Màu Quyết Thắng');assert.equal(corporate.primary,'#2E7BC3');assert.equal(corporate.secondary,'#F2363F');assert.equal(corporate.bg,'#0D1B3D');
+ for(const t of P.THEMES)for(const k of ['bg','primary','secondary','highlight','ink','muted'])assert.match(t[k],/^#[0-9A-F]{6}$/i);
+});
+test('v2.6: missing/invalid saved themes normalize to default without dropping fields',()=>{
+ const {P}=fixture();
+ for(const appearance of [undefined,{}, {themeId:'unknown',fontScale:1.2}]){
+  const e=P.normalize({id:'test',presetId:'custom',content:{title:'MY EVENT'},appearance,ownerNote:'preserve'});assert.equal(e.appearance.themeId,P.DEFAULT_THEME_ID);assert.equal(e.content.title,'MY EVENT');assert.equal(e.ownerNote,'preserve');if(appearance?.fontScale)assert.equal(e.appearance.fontScale,1.2);
+ }
+});
+test('v2.6: every valid saved theme including lotus survives normalization, save and reload',()=>{
+ const {P,context}=fixture();
+ for(const theme of P.THEMES){let catalog=P.initialCatalog();const event=P.createEvent('year-end','test',{appearance:{themeId:theme.id,fontScale:1.1}});catalog=P.addEvent(catalog,event);P.saveCatalog(context.sessionStorage,catalog);const restored=P.loadCatalog(context.sessionStorage);assert.equal(restored.events.at(-1).appearance.themeId,theme.id);assert.equal(restored.events.at(-1).appearance.fontScale,1.1)}
+});
+test('v2.6: changing preset preserves theme; changing theme preserves complete content',()=>{
+ const {P}=fixture();
+ for(const theme of P.THEMES)for(const preset of P.PRESETS){let e=P.createEvent('custom','test',{appearance:{themeId:theme.id}});e=P.changePreset(e,preset.id);assert.equal(e.appearance.themeId,theme.id);const before=plain(e.content);e=P.changeTheme(e,'quyet-thang-corporate');assert.deepEqual(plain(e.content),before)}
+});
+test('v2.6: metadata stays isolated per event and contains no roster/results',()=>{
+ const {P,context}=fixture();let catalog=P.addEvent(P.initialCatalog(),P.createEvent('year-end','year'));const old=plain(catalog.events[0]);catalog=P.replaceEvent(catalog,P.changeTheme(catalog.events[1],'lotus'));P.saveCatalog(context.sessionStorage,catalog);const restored=P.loadCatalog(context.sessionStorage);assert.deepEqual(plain(restored.events[0]),old);assert.equal(restored.events[1].appearance.themeId,'lotus');assert.doesNotMatch(JSON.stringify(restored),/"people"|"pending"|"completed"|"cccd"/);
+});
+test('v2.6: controller selector identifies default separately from active saved theme',()=>{
+ const f=fixture();f.app.initEvents();assert.equal(f.el('#themeSelect').value,'quyet-thang-corporate');assert.match(f.el('#themeSelect').innerHTML,/Sắc Màu Quyết Thắng — Mặc định/);assert.equal((f.el('#themeSelect').innerHTML.match(/<option/g)||[]).length,7);
+ f.app.changeEventTheme('lotus');assert.equal(f.el('#themeSelect').value,'lotus');assert.match(f.el('#themeSelect').innerHTML,/Sắc Màu Quyết Thắng — Mặc định/);
+});
+test('v2.6: theme saved even before importing employees and restored on reload',()=>{
+ const f=fixture();f.app.initEvents();for(const t of f.P.THEMES){assert.equal(f.app.changeEventTheme(t.id),true);const g=fixture();for(const [k,v] of f.storage)g.storage.set(k,v);g.app.initEvents();assert.equal(g.app.getEvent().appearance.themeId,t.id);assert.equal(g.el('#appShell').dataset.theme,t.id);assert.equal(g.app.state.people.length,0)}
+});
+test('v2.6: switching themes during a draw leaves selected winners, timer, prices and audio unchanged',async()=>{
+ const f=fixture();f.app.initEvents();await f.app.loadCustomers([['Mã nhân viên','Họ tên'],...people().map(p=>[p.code,p.name])],'SYNTHETIC','Test');f.app.startRound();
+ const before=plain(f.E.snapshot(f.app.state)),deadline=f.app.state.deadline,prices=plain(f.app.PRIZES),content=plain(f.app.getEvent().content);f.app.state.musicEnabled=true;f.app.state.soundEnabled=false;
+ for(const t of f.P.THEMES){assert.equal(f.app.changeEventTheme(t.id),true);assert.deepEqual(plain(f.E.snapshot(f.app.state)),before);assert.equal(f.app.state.deadline,deadline);assert.deepEqual(plain(f.app.PRIZES),prices);assert.deepEqual(plain(f.app.getEvent().content),content);assert.equal(f.app.state.musicEnabled,true);assert.equal(f.app.state.soundEnabled,false)}
+ assert.equal(f.app.createNewEvent('custom'),false);assert.equal(f.app.selectPreset('year-end'),false);assert.equal(f.app.switchEvent('legacy-event'),false);
+});
+test('v2.6: controller new events default to corporate and preserve their individual chosen themes',()=>{
+ const f=fixture();f.app.initEvents();f.app.changeEventTheme('lotus');const first=f.app.getEvent().id;
+ assert.equal(f.app.createNewEvent('year-end'),true);const second=f.app.getEvent().id;assert.notEqual(first,second);assert.equal(f.app.getEvent().appearance.themeId,'quyet-thang-corporate');assert.match(f.el('#eventHeading').textContent,/YEAR END PARTY/);f.app.changeEventTheme('ocean');f.app.selectPreset('teachers-day');assert.equal(f.app.getEvent().appearance.themeId,'ocean');f.app.selectPreset('year-end');
+ assert.equal(f.app.switchEvent(first),true);assert.equal(f.app.getEvent().appearance.themeId,'lotus');assert.equal(f.app.switchEvent(second),true);assert.equal(f.app.getEvent().appearance.themeId,'ocean');
+ for(const preset of ['teachers-day','custom']){assert.equal(f.app.createNewEvent(preset),true);assert.equal(f.app.getEvent().appearance.themeId,'quyet-thang-corporate')}
+});
+test('v2.6: event-specific runtime and price settings survive switching independently',async()=>{
+ const f=fixture();f.app.initEvents();const first=f.app.getEvent().id;await f.app.loadCustomers([['Mã nhân viên','Họ tên'],...people().map(p=>[p.code,p.name])],'SYNTHETIC','Test');f.app.changePrizeAmount({matches:()=>true,dataset:{prizeKey:'encouragement'},value:'300000'});f.app.startRound();f.advance(10000);f.app.drawTick();const original=plain(f.app.state.completed);
+ assert.equal(f.app.createNewEvent('year-end'),true);assert.equal(f.app.state.people.length,0);assert.equal(f.app.PRIZES[0].amount,200000);assert.equal(f.app.switchEvent(first),true);assert.equal(f.app.PRIZES[0].amount,300000);assert.deepEqual(plain(f.app.state.completed),original);assert.equal(f.app.canChangePrizes(),false);
+});
+test('v2.6: Year End content stays independent in stage, reveal, completion and audit',async()=>{
+ const f=fixture();f.app.initEvents();f.app.selectPreset('year-end');
+ for(const id of ['eventHeading','eventKicker','eventOccasion','revealOccasion','brandEventType'])assert.doesNotMatch(f.el('#'+id).textContent,/20\/11|NHÀ GIÁO|THẦY CÔ/i);
+ await f.app.loadCustomers([['Mã nhân viên','Họ tên'],...people().map(p=>[p.code,p.name])],'SYNTHETIC','Test');
+ for(let i=0;i<13;i++){f.app.startRound();f.advance(10000);f.app.drawTick();f.app.nextRound()}
+ assert.doesNotMatch(f.el('#currentPrizeTitle').textContent+' '+f.el('#currentPrizeCount').textContent,/NHÀ GIÁO|THẦY CÔ|tri thức/i);assert.doesNotMatch(f.app.auditPayload().app+f.app.auditPayload().eventName,/20\/11|NHÀ GIÁO/i);assert.equal(f.app.auditPayload().appearance.themeId,'quyet-thang-corporate');assert.equal(f.app.resultRows().length,45);
+});
+test('v2.6: storage failure rolls theme back without losing draw state',()=>{
+ const f=fixture();f.app.initEvents();const old=plain(f.app.getEvent());f.context.sessionStorage.setItem=()=>{throw Error('quota')};assert.equal(f.app.changeEventTheme('lotus'),false);assert.deepEqual(plain(f.app.getEvent()),old);assert.equal(f.el('#themeSelect').value,'quyet-thang-corporate');
+});
+test('v2.6: corrupted catalog fails closed without overwriting saved data',()=>{
+ const f=fixture(),raw='{"version":1,"events":[]}';f.storage.set(f.P.CATALOG_KEY,raw);f.app.initEvents();assert.equal(f.app.state.recoveryBlocked,true);assert.equal(f.app.changeEventTheme('lotus'),false);assert.equal(f.storage.get(f.P.CATALOG_KEY),raw);
+});
+test('v2.6: concurrent catalog edits are rejected rather than deleting another event',()=>{
+ const f=fixture();f.app.initEvents();const external=f.P.addEvent(f.app.getCatalog(),f.P.createEvent('custom','other-tab'));f.storage.set(f.P.CATALOG_KEY,JSON.stringify(external));assert.equal(f.app.changeEventTheme('lotus'),false);assert.equal(JSON.parse(f.storage.get(f.P.CATALOG_KEY)).events.length,2);
+});
+test('v2.6: new-event preset picker never changes the current event',()=>{
+ const f=fixture();f.app.initEvents();f.app.bind();const before=plain(f.app.getEvent());f.el('#newEventPreset').value='year-end';assert.deepEqual(plain(f.app.getEvent()),before);f.el('#createEventBtn').events.click();assert.equal(f.app.getEvent().presetId,'year-end');assert.equal(f.app.getEvent().appearance.themeId,'quyet-thang-corporate');assert.deepEqual(plain(f.app.getCatalog().events.find(e=>e.id===before.id)),before);
+});
+test('v2.6: compatible pre-platform v2.4 pending draw and custom title restore without reselection',()=>{
+ const f=fixture(),s=ready(f);f.E.begin(s,250000,persist,f.now());const raw={...plain(f.E.snapshot(s)),eventName:'SỰ KIỆN ĐÃ LƯU'};f.storage.set('lucky-draw-quyet-thang-2011-v4-tab-session',JSON.stringify(raw));f.app.initEvents();assert.equal(f.app.restoreSession(),true);assert.deepEqual(plain(f.app.state.pending),plain(s.pending));assert.equal(f.app.state.roundEndsAt,s.roundEndsAt);assert.equal(f.app.getEvent().content.title,'SỰ KIỆN ĐÃ LƯU');assert.equal(f.app.getEvent().appearance.themeId,'quyet-thang-corporate');
+});
+test('v2.6: changing themes after reveal preserves the exact completed records and Excel rows',async()=>{
+ const f=fixture();f.app.initEvents();await f.app.loadCustomers([['Mã nhân viên','Họ tên'],...people().map(p=>[p.code,p.name])],'SYNTHETIC','Test');f.app.startRound();f.advance(10000);f.app.drawTick();const completed=plain(f.app.state.completed),rows=plain(f.app.resultRows());for(const t of f.P.THEMES){f.app.changeEventTheme(t.id);assert.deepEqual(plain(f.app.state.completed),completed);assert.deepEqual(plain(f.app.resultRows()),rows);assert.equal(f.app.state.phase,'REVEAL')}
 });

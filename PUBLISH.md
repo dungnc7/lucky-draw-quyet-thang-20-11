@@ -1,4 +1,4 @@
-# GitHub Pages — Lucky Draw Quyết Thắng v2.4
+# GitHub Pages — Lucky Draw Quyết Thắng v2.6
 
 Repository: https://github.com/dungnc7/lucky-draw-quyet-thang-20-11
 
