@@ -14,7 +14,9 @@ Website: [dungnc7.github.io/lucky-draw-quyet-thang-20-11](https://dungnc7.github
 - Theme được lưu riêng cho từng sự kiện, kể cả khi chưa nhập danh sách. Một theme hợp lệ đã lưu, bao gồm `lotus`, được giữ sau reload. Thiếu/sai theme ID thì dùng corporate; không ghi đè các trường khác.
 - Theme không chứa câu chữ của sự kiện. Year End Party không dùng nội dung 20/11; thay theme không thay nội dung, tiền giải, người trúng, đồng hồ hoặc âm thanh.
 
-Danh mục sự kiện chỉ chứa nội dung/giao diện, lưu ở `localStorage` của trình duyệt (dùng `sessionStorage` nếu môi trường không cho truy cập localStorage). Danh sách nhân viên, lượt đang quay, kết quả và tiền giải được lưu riêng theo sự kiện trong `sessionStorage` của tab. Không đồng bộ qua máy chủ hoặc thiết bị. Nếu danh mục đổi ở tab khác, ứng dụng yêu cầu tải lại thay vì ghi đè dữ liệu của tab đó.
+Các thiết bị online mặc định tải cấu hình đã công bố từ `config/published.json`. Admin hiển thị phiên bản, thời điểm công bố và nguồn đang dùng. Chọn **Dùng bản nháp trên máy** để chỉnh sửa; các thay đổi này chưa áp dụng cho thiết bị khác. Xem [hướng dẫn cấu hình chung](docs/SHARED_CONFIGURATION.md) để xuất/nhập/xem trước, dùng bản sao offline và xuất bản qua GitHub có xác thực. Phiên đang quay giữ bản chụp cấu hình đã khóa, không nhận thay đổi từ xa.
+
+Danh mục bản nháp sự kiện chỉ chứa nội dung/giao diện, lưu ở `localStorage` của trình duyệt (dùng `sessionStorage` nếu môi trường không cho truy cập localStorage). Danh sách nhân viên, lượt đang quay, kết quả và tiền giải được lưu riêng theo sự kiện trong `sessionStorage` của tab. Danh sách và phiên quay không đồng bộ qua máy chủ hoặc thiết bị; chỉ cấu hình đã công bố được dùng chung. Nếu danh mục đổi ở tab khác, ứng dụng yêu cầu tải lại thay vì ghi đè dữ liệu của tab đó.
 
 Vì nguồn gốc chỉ có v2.4 chưa có theme/preset, chủ dự án đã cho phép bổ sung lớp sự kiện và tạo bộ 7 theme mới vào ngày 18/11/2026. Không tuyên bố đã có hoặc giữ nguyên một bộ theme v2.6 cũ.
 
@@ -32,9 +34,9 @@ Tổng 44 người khác nhau, 13 lượt, 130 giây đếm ngược; thời gia
 
 ## Vận hành
 
-1. Mở website hoặc tải `index.html` và mở bằng Chrome/Edge để dùng offline. Không cần build, CDN, backend hay cài package.
+1. Mở website online để tải cấu hình công bố mới nhất. Để dùng offline, tải `index.html` cùng bản sao cấu hình đã công bố, mở HTML rồi nhập/xem trước và chọn dùng bản sao. Không tự dùng cache khi mất mạng. Có thể chủ động chọn bản nháp cục bộ.
 2. Chọn hoặc kéo thả Excel `.xlsx`/`.xlsm` hoặc CSV, ít nhất 44 nhân viên hợp lệ. Ưu tiên cột **Mã nhân viên**, **Họ tên**; **Phòng ban** và **Số CCCD** tùy chọn. Không chạy macro/formula. `.xls` cũ cần lưu lại thành `.xlsx`.
-3. Kiểm tra báo cáo loại dòng sai/trùng và chỉnh số tiền từng giải. Trường tiền khóa ngay khi bắt đầu lượt đầu; chỉ phiên mới cho phép sửa lại.
+3. Kiểm tra báo cáo loại dòng sai/trùng. Số tiền lấy từ cấu hình công bố; muốn chỉnh cục bộ phải chuyển sang bản nháp trước phiên. Trường tiền khóa ngay khi bắt đầu lượt đầu; chỉ phiên mới cho phép sửa lại.
 4. Dùng **Chế độ sân khấu** để ẩn quản trị và yêu cầu fullscreen khi trình duyệt hỗ trợ. Có thể dùng fullscreen của trình duyệt nếu yêu cầu này bị từ chối. Màn hình 16:9 1366×768 và 1920×1080 đã kiểm tra bố cục.
 5. Bật/tắt nhạc và âm đếm giây độc lập. Âm tổng hợp có sẵn, không tải nhạc từ mạng; file nhạc riêng do người vận hành chọn cần có quyền sử dụng. Trình duyệt cần tương tác người dùng để phát âm.
 6. Nhấn **Bắt đầu quay** cho từng lượt. Kết quả giữ trên màn hình công bố. **Chuẩn bị lượt tiếp theo** chỉ chuyển sang sẵn sàng; nhấn bắt đầu lần nữa mới quay. Không tự chạy lượt kế tiếp.
@@ -61,6 +63,7 @@ Chế độ demo tạo tên/mã giả lập và CCCD trống. Chỉ dùng demo/f
 ```sh
 python3 scripts/preflight.py
 node --test tests/test-v24.cjs
+python3 -m unittest discover -s tests -p 'test_publication.py'
 python3 -m http.server 8765 --bind 127.0.0.1
 ```
 

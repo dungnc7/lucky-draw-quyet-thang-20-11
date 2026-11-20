@@ -21,3 +21,9 @@ Implement v2.6 from approved v2.4 baseline 696a734. On 2026-11-18 the owner expl
 - Do not force push or replace unrelated history/configuration. Do not assume private repositories can host Pages on the current plan.
 - Before committing: run `python3 scripts/preflight.py` and `node --test tests/test-v24.cjs`; perform browser smoke testing when available.
 - Verify the actual public endpoint and deployment status before claiming a release is live. Document what was tested and any manual validation still required.
+
+## Shared configuration contract
+- Versioned public JSON is distinct from local drafts and private sessionStorage. Follow docs/SHARED_CONFIGURATION.md.
+- Publish through authenticated CLI/Actions; no client secrets, no private runtime data in JSON or workflow inputs. Review all public prose for sensitive content.
+- Strict schema/client/rules validation, monotonic revisions, explicit offline backup and immutable active snapshots must fail safely. Never apply remote settings to a locked session.
+- Run Python publication tests in addition to preflight and all Node tests. Never rewrite existing config/versions files; new content needs a new revision.

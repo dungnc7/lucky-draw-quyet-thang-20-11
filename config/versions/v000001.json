@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "clientId": "lucky-draw-v26-shared-1",
+  "publication": {
+    "state": "published",
+    "revision": 1,
+    "baseRevision": 0,
+    "publishedAt": "2026-11-20T09:49:04.120Z"
+  },
+  "event": {
+    "id": "quyet-thang-20-11-2026",
+    "presetId": "teachers-day",
+    "content": {
+      "title": "CHƯƠNG TRÌNH QUAY THƯỞNG NGÀY NHÀ GIÁO VIỆT NAM 20/11",
+      "kicker": "CHÀO MỪNG NGÀY NHÀ GIÁO VIỆT NAM",
+      "occasion": "NGÀY NHÀ GIÁO VIỆT NAM • 20/11/2026",
+      "brandLabel": "CHƯƠNG TRÌNH 20/11",
+      "completedTitle": "CHÚC MỪNG NGÀY NHÀ GIÁO VIỆT NAM",
+      "completedMessage": "KÍNH CHÚC CÁC THẦY CÔ SỨC KHỎE, HẠNH PHÚC VÀ THÀNH CÔNG"
+    },
+    "appearance": {
+      "themeId": "quyet-thang-corporate",
+      "logo": {
+        "kind": "builtin",
+        "id": "quyet-thang-original"
+      },
+      "background": {
+        "kind": "theme"
+      }
+    }
+  },
+  "draw": {
+    "rulesId": "v2.4-consolation-5x6",
+    "durationMs": 10000,
+    "prizes": [
+      {
+        "key": "encouragement",
+        "name": "Giải khuyến khích",
+        "count": 30,
+        "batchSize": 6,
+        "amount": 200000
+      },
+      {
+        "key": "fourth",
+        "name": "Giải tư",
+        "count": 8,
+        "batchSize": 4,
+        "amount": 500000
+      },
+      {
+        "key": "third",
+        "name": "Giải ba",
+        "count": 3,
+        "batchSize": 1,
+        "amount": 1000000
+      },
+      {
+        "key": "second",
+        "name": "Giải nhì",
+        "count": 2,
+        "batchSize": 1,
+        "amount": 2000000
+      },
+      {
+        "key": "first",
+        "name": "Giải nhất",
+        "count": 1,
+        "batchSize": 1,
+        "amount": 3000000
+      }
+    ]
+  },
+  "audio": {
+    "countdownEnabled": true,
+    "musicEnabled": false,
+    "music": {
+      "kind": "builtin",
+      "id": "synthesized-suspense"
+    }
+  }
+}

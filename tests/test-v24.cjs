@@ -11,12 +11,12 @@ function fixture(){
  const storage=new Map(),els=new Map();
  function element(){const classes=new Set();return {events:{},appendChild(){},value:'',textContent:'',innerHTML:'',disabled:false,dataset:{},style:{setProperty(){}},classList:{add(...xs){xs.forEach(x=>classes.add(x))},remove(...xs){xs.forEach(x=>classes.delete(x))},contains(x){return classes.has(x)},toggle(x,v){if(v??!classes.has(x))classes.add(x);else classes.delete(x)}},setAttribute(k,v){this[k]=v},addEventListener(k,fn){this.events[k]=fn},matches(){return true},click(){},remove(){}}}
  const el=id=>{if(!els.has(id))els.set(id,element());return els.get(id)};
- const context=vm.createContext({console,crypto:webcrypto,Uint32Array,Uint8Array,ArrayBuffer,Blob,TextEncoder,TextDecoder,Date:class extends Date{constructor(...args){super(...(args.length?args:[clock]))}static now(){return clock}},performance:{now:()=>clock},setInterval:()=>++interval,clearInterval(){},setTimeout:(fn,ms,...args)=>setTimeout(fn,0,...args),clearTimeout,URL:{createObjectURL:()=> 'blob:test',revokeObjectURL(){}},sessionStorage:{getItem:k=>storage.get(k)||null,setItem(k,v){storage.set(k,v)},removeItem:k=>storage.delete(k)},document:{querySelector:el,addEventListener(){},createElement:element,body:{appendChild(){}},documentElement:{}},confirm:()=>true,addEventListener(){}});
+ const context=vm.createContext({console,crypto:webcrypto,Uint32Array,Uint8Array,ArrayBuffer,Blob,TextEncoder,TextDecoder,Date:class extends Date{constructor(...args){super(...(args.length?args:[clock]))}static now(){return clock}},performance:{now:()=>clock},setInterval:()=>++interval,clearInterval(){},setTimeout:(fn,ms,...args)=>setTimeout(fn,0,...args),clearTimeout,URL:class extends URL{static createObjectURL(){return 'blob:test'}static revokeObjectURL(){}},AbortController,sessionStorage:{getItem:k=>storage.get(k)||null,setItem(k,v){storage.set(k,v)},removeItem:k=>storage.delete(k)},document:{querySelector:el,addEventListener(){},createElement:element,body:{appendChild(){}},documentElement:{}},confirm:()=>true,addEventListener(){}});
  context.window=context;context.globalThis=context;
- vm.runInContext(scripts[0],context);vm.runInContext(scripts[1],context);vm.runInContext(scripts[2],context);vm.runInContext(scripts[3],context);
- vm.runInContext(scripts[4].replace(/\ninit\(\);/,`\nglobalThis.api={state,PRIZES,parseCustomers,parsePrizeAmount,loadCustomers,startRound,finishRound,nextRound,drawTick,restoreSession,persistState,canChangePrizes,changePrizeAmount,renderStage,showReveal,hideReveal,resultRows,auditPayload,bind,canStart,discardDrawSession,initEvents,changeEventTheme,selectPreset,switchEvent,createNewEvent,saveEventTitle,renderEventContent,renderEventControls,getEvent:()=>activeEvent,getCatalog:()=>catalog};`),context);
+ vm.runInContext(scripts[0],context);vm.runInContext(scripts[1],context);vm.runInContext(scripts[2],context);vm.runInContext(scripts[3],context);vm.runInContext(scripts[4],context);
+ vm.runInContext(scripts[5].replace(/\ninit\(\);/,`\nglobalThis.api={state,PRIZES,parseCustomers,parsePrizeAmount,loadCustomers,startRound,finishRound,nextRound,drawTick,restoreSession,persistState,canChangePrizes,changePrizeAmount,renderStage,showReveal,hideReveal,resultRows,auditPayload,bind,canStart,discardDrawSession,initEvents,changeEventTheme,selectPreset,switchEvent,createNewEvent,saveEventTitle,renderEventContent,renderEventControls,getEvent:()=>activeEvent,getCatalog:()=>catalog,configurationForCurrent,initializeSharedConfiguration,refreshPublishedConfiguration,receivePublication,applyPublicConfiguration,useLocalDraft,importConfigurationFile,applyPreviewConfiguration,loadSharedPointer,reset,getSharedState:()=>({mode:sharedMode,ready:configurationReady,applied:appliedConfiguration,latest:latestPublication,frozen:sessionFrozenConfiguration,message:sharedMessage})};`),context);
  el('#eventName').value='TEST — SYNTHETIC ONLY';
- return {context,P:context.EventPlatform,E:context.BatchEngine,app:context.api,storage,el,advance:ms=>clock+=ms,now:()=>clock};
+ return {context,S:context.SharedConfiguration,P:context.EventPlatform,E:context.BatchEngine,app:context.api,storage,el,advance:ms=>clock+=ms,now:()=>clock};
 }
 const people=()=>Array.from({length:120},(_,i)=>({id:'EMP:TEST'+i,code:'TEST'+i,cccd:'',name:'Nhân viên giả lập '+i,department:'Test'}));
 const plain=x=>JSON.parse(JSON.stringify(x));
@@ -213,4 +213,90 @@ test('v2.6: compatible pre-platform v2.4 pending draw and custom title restore w
 });
 test('v2.6: changing themes after reveal preserves the exact completed records and Excel rows',async()=>{
  const f=fixture();f.app.initEvents();await f.app.loadCustomers([['Mã nhân viên','Họ tên'],...people().map(p=>[p.code,p.name])],'SYNTHETIC','Test');f.app.startRound();f.advance(10000);f.app.drawTick();const completed=plain(f.app.state.completed),rows=plain(f.app.resultRows());for(const t of f.P.THEMES){f.app.changeEventTheme(t.id);assert.deepEqual(plain(f.app.state.completed),completed);assert.deepEqual(plain(f.app.resultRows()),rows);assert.equal(f.app.state.phase,'REVEAL')}
+});
+
+function publicConfig(f,revision=1,{theme='quyet-thang-corporate',amount=200000,title='PUBLIC TEST EVENT'}={}){
+ const draft=f.S.createDraft(f.P.createEvent('custom','shared-test',{content:{title},appearance:{themeId:theme}}),{amounts:{encouragement:amount},baseRevision:revision-1});
+ draft.publication={state:'published',revision,baseRevision:revision-1,publishedAt:'2026-11-20T12:00:00.000Z'};return plain(f.S.validate(draft,{publishedOnly:true}));
+}
+function responseFor(config){return {ok:true,status:200,headers:{get:k=>k==='content-type'?'application/json':null},text:async()=>JSON.stringify(config)}}
+async function onlineShared(f,config){f.app.initEvents();f.context.location={href:'https://example.test/app/'};f.context.fetch=async()=>responseFor(config);await f.app.initializeSharedConfiguration()}
+async function importPeople(f){await f.app.loadCustomers([['Mã nhân viên','Họ tên'],...people().map(p=>[p.code,p.name])],'SYNTHETIC','Test')}
+
+test('shared: first online load uses the published configuration rather than local draft settings',async()=>{
+ const f=fixture(),config=publicConfig(f,1,{theme:'ocean',amount:350000});await onlineShared(f,config);assert.equal(f.app.getSharedState().mode,'published');assert.equal(f.app.getSharedState().ready,true);assert.equal(f.app.getEvent().appearance.themeId,'ocean');assert.equal(f.app.PRIZES[0].amount,350000);assert.equal(f.app.canChangePrizes(),false);assert.match(f.el('#sharedVersion').textContent,/v1/);assert.match(f.el('#sharedVersion').textContent,/2026-11-20/);
+});
+test('shared: independent devices load identical public settings but never share employees or winners',async()=>{
+ const a=fixture(),b=fixture(),config=publicConfig(a,1,{theme:'lotus'});await onlineShared(a,config);await onlineShared(b,config);assert.deepEqual(plain(a.app.configurationForCurrent()),plain(b.app.configurationForCurrent()));await importPeople(a);a.app.startRound();assert.equal(a.app.state.pending.length,6);assert.equal(b.app.state.people.length,0);assert.equal(b.app.state.pending.length,0);assert.equal(b.app.state.completed.length,0);
+});
+test('shared: network request is anonymous, cache bypassed and GET-only to same-origin configuration',async()=>{
+ const f=fixture(),config=publicConfig(f);f.app.initEvents();let call;f.context.location={href:'https://example.test/project/'};f.context.fetch=async(url,options)=>{call={url,options};return responseFor(config)};await f.app.initializeSharedConfiguration();assert.match(call.url,/^https:\/\/example\.test\/project\/config\/published\.json\?t=/);assert.equal(call.options.credentials,'omit');assert.equal(call.options.cache,'no-store');assert.equal(call.options.redirect,'error');assert.equal(call.options.method,undefined);assert.equal(call.options.body,undefined);
+});
+test('shared: opening online always checks a newer publication, not the cached local draft',async()=>{
+ const a=fixture(),first=publicConfig(a);await onlineShared(a,first);const b=fixture();for(const [k,v] of a.storage)b.storage.set(k,v);const next=publicConfig(b,2,{theme:'crimson',amount:400000});await onlineShared(b,next);assert.equal(b.app.getSharedState().applied.publication.revision,2);assert.equal(b.app.PRIZES[0].amount,400000);assert.equal(b.app.getEvent().appearance.themeId,'crimson');
+});
+test('shared: pre-start publication update applies consistently without generating winners',async()=>{
+ const f=fixture();await onlineShared(f,publicConfig(f));await importPeople(f);f.app.receivePublication(publicConfig(f,2,{amount:300000}));assert.equal(f.app.PRIZES[0].amount,300000);assert.equal(f.app.state.people.length,120);assert.equal(f.app.state.pending.length,0);assert.equal(f.app.state.running,false);
+});
+test('shared: active-session critical settings stay frozen across remote updates and later batches',async()=>{
+ const f=fixture();await onlineShared(f,publicConfig(f));await importPeople(f);f.app.startRound();const ids=plain(f.app.state.pending),deadline=f.app.state.deadline;f.app.receivePublication(publicConfig(f,2,{amount:900000,theme:'lotus'}));assert.equal(f.app.PRIZES[0].amount,200000);assert.deepEqual(plain(f.app.state.pending),ids);assert.equal(f.app.state.deadline,deadline);assert.equal(f.app.getSharedState().frozen.publication.revision,1);assert.equal(f.app.getSharedState().latest.publication.revision,2);assert.equal(f.app.getEvent().appearance.themeId,'quyet-thang-corporate');f.advance(10000);f.app.drawTick();f.app.nextRound();f.app.startRound();assert.equal(f.app.state.pendingAmount,200000);assert.equal(f.app.getSharedState().frozen.publication.revision,1);
+});
+test('shared: page reload resumes identical frozen winners even if published config changes',async()=>{
+ const f=fixture();await onlineShared(f,publicConfig(f));await importPeople(f);f.app.startRound();const ids=plain(f.app.state.pending);const g=fixture();for(const [k,v] of f.storage)g.storage.set(k,v);g.app.initEvents();assert.equal(g.app.loadSharedPointer(),true);assert.equal(g.app.restoreSession(),true);g.context.location={href:'https://example.test/'};g.context.fetch=async()=>responseFor(publicConfig(g,2,{amount:999999}));await g.app.initializeSharedConfiguration();assert.deepEqual(plain(g.app.state.pending),ids);assert.equal(g.app.PRIZES[0].amount,200000);assert.equal(g.app.getSharedState().frozen.publication.revision,1);g.advance(10000);g.app.drawTick();assert.deepEqual(plain(g.app.state.completed[0].winners),ids);
+});
+test('shared: newest publication becomes usable only after explicit session reset',async()=>{
+ const f=fixture();await onlineShared(f,publicConfig(f));await importPeople(f);f.app.startRound();f.advance(10000);f.app.drawTick();f.app.receivePublication(publicConfig(f,2,{amount:500000}));f.app.reset();assert.equal(f.app.state.people.length,0);assert.equal(f.app.state.completed.length,0);assert.equal(f.app.getSharedState().frozen,null);assert.equal(f.app.getSharedState().applied.publication.revision,2);assert.equal(f.app.PRIZES[0].amount,500000);
+});
+test('shared: unavailable network blocks first-time published draws, never silently uses draft/cache',async()=>{
+ const f=fixture();f.app.initEvents();await importPeople(f);f.context.location={href:'https://example.test/'};f.context.fetch=async()=>{throw Error('offline')};await f.app.initializeSharedConfiguration();assert.equal(f.app.getSharedState().ready,false);assert.equal(f.app.canStart(),false);assert.equal(f.app.getSharedState().mode,'published');assert.equal(f.app.useLocalDraft(),true);assert.equal(f.app.getSharedState().mode,'draft');
+});
+test('shared: invalid server JSON and unsupported schema block application safely',async()=>{
+ for(const invalid of ['not json',JSON.stringify({...publicConfig(fixture()),schemaVersion:99})]){const f=fixture();f.app.initEvents();f.context.location={href:'https://example.test/'};f.context.fetch=async()=>({ok:true,headers:{get:()=> 'application/json'},text:async()=>invalid});await f.app.initializeSharedConfiguration();assert.equal(f.app.getSharedState().ready,false);assert.equal(f.app.canStart(),false);assert.equal(f.app.state.pending.length,0)}
+});
+test('shared: explicit downloaded backup is validated, previewed and usable without network',async()=>{
+ const f=fixture(),config=publicConfig(f,1,{theme:'emerald'});f.app.initEvents();const raw=JSON.stringify(config);assert.equal(await f.app.importConfigurationFile({size:raw.length,text:async()=>raw}),true);assert.equal(f.app.getSharedState().mode,'draft');assert.equal(f.app.applyPreviewConfiguration(),true);assert.equal(f.app.getSharedState().mode,'offline');assert.equal(f.app.getEvent().appearance.themeId,'emerald');assert.equal(f.app.getSharedState().ready,true);assert.match(f.el('#sharedVersion').textContent,/2026-11-20/);await importPeople(f);assert.equal(f.app.canStart(),true);
+});
+test('shared: explicit offline backup survives a reload without using an implicit network cache',async()=>{
+ const f=fixture(),config=publicConfig(f);f.app.initEvents();f.app.applyPublicConfiguration(config,'offline');await importPeople(f);const g=fixture();for(const [k,v] of f.storage)g.storage.set(k,v);g.app.initEvents();assert.equal(g.app.loadSharedPointer(),true);g.app.restoreSession();g.context.location={href:'file:///offline/index.html'};await g.app.initializeSharedConfiguration();assert.equal(g.app.getSharedState().mode,'offline');assert.equal(g.app.getSharedState().ready,true);assert.equal(g.app.canStart(),true);
+});
+test('shared: cache alone is never treated as an explicitly imported offline backup',async()=>{
+ const f=fixture();f.storage.set('lucky-publication-last-seen-v1',JSON.stringify(publicConfig(f)));f.app.initEvents();f.context.location={href:'https://example.test/'};f.context.fetch=async()=>{throw Error('offline')};await f.app.initializeSharedConfiguration();assert.equal(f.app.getSharedState().ready,false);assert.notEqual(f.app.getSharedState().mode,'offline');
+});
+test('shared: stale revision and same-version content mismatch are rejected',()=>{
+ const f=fixture(),a=publicConfig(f,2),old=publicConfig(f,1),collision=publicConfig(f,2,{theme:'lotus'});assert.throws(()=>f.S.comparePublication(old,a),/cũ hơn/);assert.throws(()=>f.S.comparePublication(collision,a),/cùng số phiên bản/);assert.equal(f.S.comparePublication(a,a),'same');
+});
+test('shared: strict schema rejects rosters, results, credentials and private identifiers instead of stripping them',()=>{
+ const f=fixture(),config=publicConfig(f);
+ for(const key of ['people','winners','cccd','sessions','token','password']){const bad=plain(config);bad[key]=[];assert.throws(()=>f.S.validate(bad))}
+ const nested=plain(config);nested.event.appearance.winners=[];assert.throws(()=>f.S.validate(nested));
+ const id=plain(config);id.event.content.title='SYNTHETIC '+ '0'.repeat(12);assert.throws(()=>f.S.validate(id));
+ const hiddenId=plain(config);hiddenId.event.id='0'.repeat(12);assert.throws(()=>f.S.validate(hiddenId));
+});
+test('shared: approved batch allocation, 10-second duration, logo and media references cannot be overridden',()=>{
+ const f=fixture(),config=publicConfig(f);
+ for(const mutate of [c=>c.draw.durationMs=5000,c=>c.draw.prizes[0].batchSize=5,c=>c.draw.prizes[1].count=9,c=>c.event.appearance.themeId='unknown',c=>c.event.appearance.logo={kind:'url',id:'https://bad.test/'},c=>c.audio.music={kind:'url',id:'https://bad.test/'},c=>c.event.appearance.background={kind:'image',url:'https://bad.test/'},c=>c.audio.musicEnabled='true']){const bad=plain(config);mutate(bad);assert.throws(()=>f.S.validate(bad))}
+});
+test('shared: draft creation defaults corporate and exports no session data, even after winners exist',async()=>{
+ const f=fixture();f.app.initEvents();await importPeople(f);f.app.startRound();f.advance(10000);f.app.drawTick();const config=f.app.configurationForCurrent();assert.equal(config.event.appearance.themeId,'quyet-thang-corporate');assert.equal(config.publication.state,'draft');assert.doesNotMatch(JSON.stringify(config),/"people"|"winners"|"cccd"|"pending"|Nhân viên giả lập/);assert.equal(config.draw.prizes[0].count,30);
+});
+test('shared: importing a draft creates a new local event and never publishes or overwrites another draft',async()=>{
+ const f=fixture();f.app.initEvents();const old=plain(f.app.getEvent());const draft=f.S.createDraft(f.P.createEvent('year-end','import-proposal',{appearance:{themeId:'lotus',background:{kind:'solid',color:'#112233'}}}),{amounts:{encouragement:450000},audio:{countdownEnabled:false,musicEnabled:true}});const raw=JSON.stringify(draft);await f.app.importConfigurationFile({size:raw.length,text:async()=>raw});assert.equal(f.app.applyPreviewConfiguration(),true);assert.notEqual(f.app.getEvent().id,'import-proposal');assert.deepEqual(plain(f.app.getCatalog().events.find(e=>e.id===old.id)),old);assert.equal(f.app.getSharedState().mode,'draft');assert.equal(f.app.PRIZES[0].amount,450000);assert.equal(f.app.state.soundEnabled,false);assert.equal(f.app.state.musicEnabled,true);assert.equal(f.app.getEvent().appearance.background.color,'#112233');
+});
+test('shared: an active session refuses imported backup/draft and keeps frozen settings',async()=>{
+ const f=fixture();await onlineShared(f,publicConfig(f));await importPeople(f);f.app.startRound();const before=plain(f.E.snapshot(f.app.state));const config=publicConfig(f,2,{amount:700000});const raw=JSON.stringify(config);await f.app.importConfigurationFile({size:raw.length,text:async()=>raw});assert.equal(f.app.applyPreviewConfiguration(),false);assert.equal(f.app.useLocalDraft(),false);assert.deepEqual(plain(f.E.snapshot(f.app.state)),before);
+});
+test('shared: unsupported or oversized backup cannot become active',async()=>{
+ const f=fixture();f.app.initEvents();assert.equal(await f.app.importConfigurationFile({size:40000,text:async()=> '{}'}),false);const raw=JSON.stringify({...publicConfig(f),schemaVersion:999});assert.equal(await f.app.importConfigurationFile({size:raw.length,text:async()=>raw}),false);assert.equal(f.app.getSharedState().mode,'draft');
+});
+test('shared: frozen configuration is immutable and mismatched session amounts fail closed',()=>{
+ const f=fixture(),config=publicConfig(f),frozen=f.S.freeze(config);assert.ok(Object.isFrozen(frozen));assert.ok(Object.isFrozen(frozen.draw.prizes[0]));const s=ready(f);f.E.begin(s,200000,()=>{},f.now());const snapshot={...plain(f.E.snapshot(s)),eventId:config.event.id,prizeAmounts:Object.fromEntries(config.draw.prizes.map(p=>[p.key,p.amount]))};assert.equal(f.S.assertSnapshot(snapshot,frozen),true);snapshot.prizeAmounts.encouragement=1;assert.throws(()=>f.S.assertSnapshot(snapshot,frozen));
+});
+test('shared: public fetch rejects HTTP errors, HTML responses and oversized payloads',async()=>{
+ const f=fixture();await assert.rejects(f.S.fetchPublished(async()=>({ok:false,status:404}),'https://example.test/config'),/404/);await assert.rejects(f.S.fetchPublished(async()=>({ok:true,headers:{get:()=> 'text/html'}}),'https://example.test/config'),/JSON/);await assert.rejects(f.S.fetchPublished(async()=>({ok:true,headers:{get:k=>k==='content-type'?'application/json':'40000'}}),'https://example.test/config'),/quá lớn/);
+});
+test('shared: publication preparation enforces stale-base protection and monotonically increasing versions',()=>{
+ const f=fixture(),current=publicConfig(f,3);const draft=f.S.createDraft(current.event,{baseRevision:3});const next=f.S.preparePublication(draft,current,'2026-11-20T13:00:00.000Z');assert.equal(next.publication.revision,4);assert.equal(next.publication.baseRevision,3);assert.equal(next.publication.state,'published');draft.publication.baseRevision=2;assert.throws(()=>f.S.preparePublication(draft,current,'2026-11-20T13:00:00.000Z'));
+});
+test('shared: switching to local draft while fetch is pending discards late remote response',async()=>{
+ const f=fixture();f.app.initEvents();f.context.location={href:'https://example.test/'};let resolve;f.context.fetch=()=>new Promise(r=>{resolve=r});const request=f.app.initializeSharedConfiguration();assert.equal(f.app.useLocalDraft(),true);resolve(responseFor(publicConfig(f,1,{theme:'lotus'})));await request;assert.equal(f.app.getSharedState().mode,'draft');assert.equal(f.app.getEvent().appearance.themeId,'quyet-thang-corporate');
 });
