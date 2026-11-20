@@ -950,7 +950,7 @@ function setEventKeys(){
   PRIZE_SETTINGS_KEY=activeEvent.id==='legacy-event'?'lucky-draw-quyet-thang-2011-prize-settings-v1':'lucky-v26-'+activeEvent.id+'-prizes';
 }
 function renderTheme(){
-  const theme=EventPlatform.THEMES.find(t=>t.id===activeEvent.appearance.themeId);
+  const theme=EventPlatform.THEMES.find(t=>t.id===(window.LUCKYDRAW_SHARED_THEME_OVERRIDE||activeEvent.appearance.themeId))||EventPlatform.THEMES.find(t=>t.id===activeEvent.appearance.themeId);
   el.shell.dataset.theme=theme.id;
   const background=activeEvent.appearance.background||{kind:'theme'};el.shell.dataset.background=background.kind;
   if(background.kind==='solid')el.shell.style.setProperty('--shared-background',background.color);
@@ -1495,6 +1495,7 @@ function reset(){
   if(sharedMode==='published'){if(latestPublication)applyPublicConfiguration(latestPublication,'published');else{configurationReady=false;refreshPublishedConfiguration()}}
 }
 function bind(){
+  window.addEventListener('lucky-draw-theme-override',()=>renderTheme());
   $('#useDraftBtn').addEventListener('click',useLocalDraft);
   $('#usePublishedBtn').addEventListener('click',()=>{try{if(latestPublication)applyPublicConfiguration(latestPublication,'published')}catch(err){toast(err.message,'error')}});
   $('#refreshPublishedBtn').addEventListener('click',()=>refreshPublishedConfiguration({apply:sharedMode==='published'}));
@@ -1555,5 +1556,8 @@ init();
 })();
 
 </script>
+<link rel="stylesheet" href="./cloud-theme.css">
+<script src="./cloud-theme-config.js"></script>
+<script src="./cloud-theme-sync.js"></script>
 </body>
 </html>
