@@ -1,7 +1,25 @@
 (async function(){
   'use strict';
+  if(!window.EventPlatform)return;
+  const anchor=document.querySelector('.event-manager');
+  if(!anchor)return;
+  anchor.insertAdjacentHTML('afterend', `<section class="side-section cloud-theme-controls" id="cloudThemeControls" aria-label="Lưu giao diện chung">
+    <div class="side-label"><span>☁</span> GIAO DIỆN CHUNG CHO MỌI MÁY</div>
+    <p class="cloud-subtle">Chọn và xem thử trước, chỉ quản trị viên được lưu chung.</p>
+    <label for="cloudThemeSelect">Chọn giao diện dùng chung</label>
+    <select id="cloudThemeSelect" aria-label="Chọn theme để xem trước"></select>
+    <p class="cloud-status" id="cloudThemeStatus" role="status" aria-live="polite">Đang kiểm tra kết nối…</p>
+    <button type="button" class="cloud-publish" id="cloudThemeSave" disabled>Áp dụng cho tất cả thiết bị</button>
+    <p class="cloud-subtle" id="cloudThemeTimestamp"></p>
+    <details><summary>Đăng nhập quản trị</summary>
+      <form id="cloudThemeLogin"><label for="cloudThemeEmail">Email</label><input type="email" id="cloudThemeEmail" autocomplete="username" required>
+        <label for="cloudThemePassword">Mật khẩu</label><input type="password" id="cloudThemePassword" autocomplete="current-password" required>
+        <button type="submit" class="secondary-btn full">Đăng nhập</button></form>
+      <button type="button" id="cloudThemeLogout" class="secondary-btn full" hidden>Đăng xuất</button>
+      <p id="cloudThemeAuthStatus" class="cloud-subtle" role="status"></p>
+    </details>
+  </section>`);
   const root=document.getElementById('cloudThemeControls');
-  if(!root||!window.EventPlatform)return;
   const $=id=>document.getElementById(id), catalog=EventPlatform.THEMES;
   const status=$('cloudThemeStatus'), select=$('cloudThemeSelect'), save=$('cloudThemeSave');
   const login=$('cloudThemeLogin'), logout=$('cloudThemeLogout'), mail=$('cloudThemeEmail'), pass=$('cloudThemePassword');
