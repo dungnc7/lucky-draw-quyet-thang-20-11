@@ -12,10 +12,10 @@ function fixture(){
  function element(){const classes=new Set();return {events:{},appendChild(){},value:'',textContent:'',innerHTML:'',disabled:false,dataset:{},style:{setProperty(){}},classList:{add(...xs){xs.forEach(x=>classes.add(x))},remove(...xs){xs.forEach(x=>classes.delete(x))},contains(x){return classes.has(x)},toggle(x,v){if(v??!classes.has(x))classes.add(x);else classes.delete(x)}},getAttribute(k){return this[k]||''},setAttribute(k,v){this[k]=v},addEventListener(k,fn){this.events[k]=fn},matches(){return true},click(){},remove(){}}}
  const el=id=>{if(!els.has(id))els.set(id,element());return els.get(id)};
  const context=vm.createContext({console,crypto:webcrypto,Uint32Array,Uint8Array,ArrayBuffer,Blob,TextEncoder,TextDecoder,Date:class extends Date{constructor(...args){super(...(args.length?args:[clock]))}static now(){return clock}},performance:{now:()=>clock},setInterval:()=>++interval,clearInterval(){},setTimeout:(fn,ms,...args)=>setTimeout(fn,0,...args),clearTimeout,URL:class extends URL{static createObjectURL(){return 'blob:test'}static revokeObjectURL(){}},AbortController,sessionStorage:{getItem:k=>storage.get(k)||null,setItem(k,v){storage.set(k,v)},removeItem:k=>storage.delete(k)},document:{querySelector:el,querySelectorAll:()=>[],addEventListener(){},createElement:element,body:{appendChild(){}},documentElement:{}},confirm:()=>true,addEventListener(){}});
- context.window=context;context.globalThis=context;
+ context.window=context;context.globalThis=context;context.LuckyDrawAccess={canOperate:()=>true,canAdmin:()=>true,sessionStorage:()=>context.sessionStorage,localStorage:()=>context.localStorage||context.sessionStorage,snapshot:()=>({uid:'synthetic-owner'}),verify:async()=>true};
  vm.runInContext(scripts[0],context);vm.runInContext(scripts[1],context);vm.runInContext(scripts[2],context);vm.runInContext(scripts[3],context);vm.runInContext(scripts[4],context);
  vm.runInContext(scripts[5],context);
- vm.runInContext(scripts[6].replace(/\ninit\(\);/,`\nglobalThis.api={state,PRIZES,parseCustomers,parsePrizeAmount,loadCustomers,startRound,finishRound,nextRound,drawTick,restoreSession,persistState,canChangePrizes,changePrizeAmount,renderStage,showReveal,hideReveal,resultRows,auditPayload,bind,canStart,discardDrawSession,initEvents,changeEventTheme,selectPreset,switchEvent,createNewEvent,saveEventTitle,renderEventContent,renderEventControls,getEvent:()=>activeEvent,getCatalog:()=>catalog,configurationForCurrent,initializeSharedConfiguration,refreshPublishedConfiguration,receivePublication,applyPublicConfiguration,useLocalDraft,importConfigurationFile,applyPreviewConfiguration,loadSharedPointer,reset,getSharedState:()=>({mode:sharedMode,ready:configurationReady,applied:appliedConfiguration,latest:latestPublication,frozen:sessionFrozenConfiguration,message:sharedMessage})};`),context);
+ vm.runInContext(scripts[6].replace(/\nlet runtimeOwner=/,`\nglobalThis.api={state,PRIZES,parseCustomers,parsePrizeAmount,loadCustomers,startRound,finishRound,nextRound,drawTick,restoreSession,persistState,canChangePrizes,changePrizeAmount,renderStage,showReveal,hideReveal,resultRows,auditPayload,bind,canStart,discardDrawSession,initEvents,changeEventTheme,selectPreset,switchEvent,createNewEvent,saveEventTitle,renderEventContent,renderEventControls,getEvent:()=>activeEvent,getCatalog:()=>catalog,configurationForCurrent,initializeSharedConfiguration,refreshPublishedConfiguration,receivePublication,applyPublicConfiguration,useLocalDraft,importConfigurationFile,applyPreviewConfiguration,loadSharedPointer,reset,getSharedState:()=>({mode:sharedMode,ready:configurationReady,applied:appliedConfiguration,latest:latestPublication,frozen:sessionFrozenConfiguration,message:sharedMessage})};\nlet runtimeOwner=`),context);
  el('#eventName').value='TEST — SYNTHETIC ONLY';
  return {context,S:context.SharedConfiguration,P:context.EventPlatform,E:context.BatchEngine,app:context.api,storage,el,advance:ms=>clock+=ms,now:()=>clock};
 }
@@ -107,11 +107,11 @@ test('prize amount boundaries reject invalid and unsafe input',()=>{
 test('audio controls are independent; countdown voices stop on toggle and completion',async()=>{
  const f=fixture();let stopped=0,oscillators=0;
  f.context.AudioContext=class{constructor(){this.currentTime=0;this.state='running';this.destination={}}createOscillator(){oscillators++;return {frequency:{setValueAtTime(){}},connect(){},start(){},stop(){stopped++}}}createGain(){return {gain:{value:0,setValueAtTime(){},exponentialRampToValueAtTime(){},setTargetAtTime(){}},connect(){}}}};
- f.app.bind();f.el('#musicBtn').events.click();assert.equal(f.app.state.musicEnabled,true);assert.equal(f.app.state.soundEnabled,true);
+ f.app.bind();await f.el('#musicBtn').events.click({});assert.equal(f.app.state.musicEnabled,true);assert.equal(f.app.state.soundEnabled,true);
  await f.app.loadCustomers([['Mã nhân viên','Họ tên'],...people().map(p=>[p.code,p.name])],'TEST','Test');f.app.startRound();assert.ok(oscillators>0);assert.ok(f.app.state.audioNodes.size>0);
- const before=stopped;f.el('#soundBtn').events.click();assert.equal(f.app.state.soundEnabled,false);assert.equal(f.app.state.musicEnabled,true);assert.equal(f.app.state.audioNodes.size,0);assert.ok(stopped>before);
- f.el('#musicBtn').events.click();assert.equal(f.app.state.musicEnabled,false);assert.equal(f.app.state.musicTimer,null);
- f.el('#soundBtn').events.click();f.advance(7000);f.app.drawTick();assert.equal(f.app.state.audioNodes.size,2);f.advance(3000);f.app.drawTick();assert.equal(f.app.state.audioNodes.size,0);
+ const before=stopped;await f.el('#soundBtn').events.click({});assert.equal(f.app.state.soundEnabled,false);assert.equal(f.app.state.musicEnabled,true);assert.equal(f.app.state.audioNodes.size,0);assert.ok(stopped>before);
+ await f.el('#musicBtn').events.click({});assert.equal(f.app.state.musicEnabled,false);assert.equal(f.app.state.musicTimer,null);
+ await f.el('#soundBtn').events.click({});f.advance(7000);f.app.drawTick();assert.equal(f.app.state.audioNodes.size,2);f.advance(3000);f.app.drawTick();assert.equal(f.app.state.audioNodes.size,0);
 });
 test('CCCD-only roster never exposes national ID on winner cards',async()=>{
  const f=fixture();const rows=[['CCCD','Họ tên'],...Array.from({length:44},(_,i)=>[String(i).padStart(12,'0'),'Người giả lập '+i])];await f.app.loadCustomers(rows,'TEST','Test');f.app.startRound();f.advance(10000);f.app.drawTick();const cards=f.el('#revealGrid').innerHTML;assert.match(cards,/NV-\d{5}/);assert.doesNotMatch(cards,/\d{12}/);
@@ -206,8 +206,8 @@ test('v2.6: corrupted catalog fails closed without overwriting saved data',()=>{
 test('v2.6: concurrent catalog edits are rejected rather than deleting another event',()=>{
  const f=fixture();f.app.initEvents();const external=f.P.addEvent(f.app.getCatalog(),f.P.createEvent('custom','other-tab'));f.storage.set(f.P.CATALOG_KEY,JSON.stringify(external));assert.equal(f.app.changeEventTheme('lotus'),false);assert.equal(JSON.parse(f.storage.get(f.P.CATALOG_KEY)).events.length,2);
 });
-test('v2.6: new-event preset picker never changes the current event',()=>{
- const f=fixture();f.app.initEvents();f.app.bind();const before=plain(f.app.getEvent());f.el('#newEventPreset').value='year-end';assert.deepEqual(plain(f.app.getEvent()),before);f.el('#createEventBtn').events.click();assert.equal(f.app.getEvent().presetId,'year-end');assert.equal(f.app.getEvent().appearance.themeId,'quyet-thang-corporate');assert.deepEqual(plain(f.app.getCatalog().events.find(e=>e.id===before.id)),before);
+test('v2.6: new-event preset picker never changes the current event',async()=>{
+ const f=fixture();f.app.initEvents();f.app.bind();const before=plain(f.app.getEvent());f.el('#newEventPreset').value='year-end';assert.deepEqual(plain(f.app.getEvent()),before);await f.el('#createEventBtn').events.click({});assert.equal(f.app.getEvent().presetId,'year-end');assert.equal(f.app.getEvent().appearance.themeId,'quyet-thang-corporate');assert.deepEqual(plain(f.app.getCatalog().events.find(e=>e.id===before.id)),before);
 });
 test('v2.6: compatible pre-platform v2.4 pending draw and custom title restore without reselection',()=>{
  const f=fixture(),s=ready(f);f.E.begin(s,250000,persist,f.now());const raw={...plain(f.E.snapshot(s)),eventName:'SỰ KIỆN ĐÃ LƯU'};f.storage.set('lucky-draw-quyet-thang-2011-v4-tab-session',JSON.stringify(raw));f.app.initEvents();assert.equal(f.app.restoreSession(),true);assert.deepEqual(plain(f.app.state.pending),plain(s.pending));assert.equal(f.app.state.roundEndsAt,s.roundEndsAt);assert.equal(f.app.getEvent().content.title,'SỰ KIỆN ĐÃ LƯU');assert.equal(f.app.getEvent().appearance.themeId,'quyet-thang-corporate');
@@ -324,4 +324,17 @@ test('full shared settings defer critical changes during a draw and apply them o
  assert.deepEqual(plain(f.app.state.pending),pending);assert.equal(f.app.state.roundEndsAt,deadline);assert.deepEqual(plain(f.app.PRIZES.map(p=>p.amount)),oldAmounts);
  assert.equal(f.el('#appShell').dataset.theme,'emerald');f.advance(10000);f.app.drawTick();assert.deepEqual(plain(f.app.state.completed[0].winners),pending);
  f.context.ProgramSettingsActive=true;f.app.reset();assert.equal(f.app.PRIZES[0].amount,333000);assert.equal(f.app.PRIZES[0].name,'Giải tri ân');assert.equal(f.app.state.people.length,0);
+});
+
+test('mandatory guard refuses imports/draws/exports while locked; private state restores only for its UID',async()=>{
+ const f=fixture(),M=require('../auth-guard.js');let uid='owner-A',permitted=true;
+ f.context.LuckyDrawAccess={canOperate:()=>permitted,canAdmin:()=>permitted,sessionStorage:()=>M.scoped(f.context.sessionStorage,uid),localStorage:()=>M.scoped(f.context.sessionStorage,uid),snapshot:()=>({uid}),verify:async()=>permitted};
+ f.context.LuckyDrawRuntime.unlock(uid);
+ const source=JSON.parse(fs.readFileSync(new URL('../config/published.json',`file://${__filename}`),'utf8'));
+ f.context.LuckyDrawSettingsBridge.apply(f.context.EventSettings.migrate(source),{revision:1,updatedAt:'2026-11-21T00:00:00.000Z'});
+ await importPeople(f);f.app.startRound();const pending=plain(f.app.state.pending),deadline=f.app.state.roundEndsAt;assert.equal(pending.length,6);
+ f.context.LuckyDrawRuntime.lock();assert.equal(f.app.state.people.length,0);assert.equal(f.el('#resultsPanel').innerHTML,'');
+ permitted=false;assert.equal(await f.app.loadCustomers([['code','name']], 'private','private'),false);assert.throws(()=>f.app.resultRows());f.app.startRound();assert.equal(f.app.state.running,false);
+ uid='owner-B';permitted=true;f.context.LuckyDrawRuntime.unlock(uid);assert.equal(f.app.state.people.length,0);assert.equal(f.app.state.completed.length,0);f.context.LuckyDrawRuntime.lock();
+ uid='owner-A';f.context.LuckyDrawRuntime.unlock(uid);assert.deepEqual(plain(f.app.state.pending),pending);assert.equal(f.app.state.roundEndsAt,deadline);assert.equal(f.app.state.people.length,120);
 });

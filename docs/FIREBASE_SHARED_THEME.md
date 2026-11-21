@@ -1,3 +1,5 @@
+> Authentication upgrade candidate: [AUTH_ACCESS.md](AUTH_ACCESS.md). Mandatory server-verified login and protected Firestore reads supersede the former public-viewer/offline-cache behavior below. Release requires owner approval and the coordinated maintenance sequence. Production is unchanged by this branch.
+
 # Firebase shared configuration (supersedes theme-only)
 
 Reuse project lucky-draw-quyet-thang, its registered Web App, Email/Password Authentication and private owner-provisioned Admin roles. The public SDK configuration contains identifiers, not access secrets. Do not commit UID allowlists, service keys, passwords or tokens.

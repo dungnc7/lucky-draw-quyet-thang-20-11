@@ -10,7 +10,7 @@ const themes=['quyet-thang-corporate','lotus','midnight-gold','emerald','royal-p
 const value=(themeId=themes[0])=>({schemaVersion:1,themeId,updatedAt:serverTimestamp()});
 const theme=db=>doc(db,'sharedTheme/live');
 const guest=()=>env.unauthenticatedContext().firestore();
-const user=uid=>env.authenticatedContext(uid).firestore();
+const user=uid=>env.authenticatedContext(uid,{auth_time:100}).firestore();
 before(async()=>{
  if(!process.env.FIRESTORE_EMULATOR_HOST)throw Error('Refuse to run rules tests without Firestore Emulator');
  const [host,port]=process.env.FIRESTORE_EMULATOR_HOST.split(':');
@@ -21,12 +21,14 @@ beforeEach(async()=>{
  await env.clearFirestore();
  await env.withSecurityRulesDisabled(async c=>{
   await setDoc(doc(c.firestore(),'admins/admin'),{enabled:true});
+  await setDoc(doc(c.firestore(),'operators/operator'),{enabled:true});
   await setDoc(doc(c.firestore(),'admins/disabled'),{enabled:false});
   await setDoc(doc(c.firestore(),'admins/string-role'),{enabled:'true'});
  });
 });
-test('public may get only the exact theme document, never list themes or admins',async()=>{
- const db=guest();await assertSucceeds(getDoc(theme(db)));
+test('only approved users may get the exact theme; anonymous and unknown users are denied',async()=>{
+ await assertFails(getDoc(theme(guest())));await assertFails(getDoc(theme(user('member'))));
+ const db=user('operator');await assertSucceeds(getDoc(theme(db)));
  await assertFails(getDocs(collection(db,'sharedTheme')));await assertFails(getDocs(collection(db,'admins')));
  await assertFails(getDoc(doc(db,'admins/admin')));await assertFails(getDoc(doc(db,'employees/private')));
 });
@@ -39,7 +41,7 @@ test('authenticated non-admin, disabled admin and string role cannot write',asyn
 });
 test('admin can create and update each of the seven approved themes',async()=>{
  const ref=theme(user('admin'));
- for(const id of themes){await assertSucceeds(setDoc(ref,value(id)));assert.equal((await getDoc(theme(guest()))).data().themeId,id)}
+ for(const id of themes){await assertSucceeds(setDoc(ref,value(id)));assert.equal((await getDoc(theme(user('operator')))).data().themeId,id)}
 });
 test('admin document is readable only by its own authenticated user',async()=>{
  await assertSucceeds(getDoc(doc(user('admin'),'admins/admin')));
@@ -76,9 +78,9 @@ test('revoked admin loses write permission immediately at the server',async()=>{
  await env.withSecurityRulesDisabled(c=>setDoc(doc(c.firestore(),'admins/admin'),{enabled:false}));
  await assertFails(setDoc(theme(db),value('lotus')));
 });
-test('two independent public SDK clients receive the admin update in realtime',async()=>{
+test('two independently authorized SDK clients receive the admin update in realtime',async()=>{
  await setDoc(theme(user('admin')),value());
- const contexts=[env.unauthenticatedContext(),env.unauthenticatedContext()];
+ const contexts=[env.authenticatedContext('operator',{auth_time:100}),env.authenticatedContext('operator',{auth_time:100})];
  const received=contexts.map(c=>new Promise((resolve,reject)=>{
   let stop;const timeout=setTimeout(()=>{stop?.();reject(Error('Realtime update timed out'))},10000);
   stop=onSnapshot(theme(c.firestore()),s=>{if(s.data()?.themeId==='ocean'){clearTimeout(timeout);stop();resolve(s.data())}},e=>{clearTimeout(timeout);stop?.();reject(e)});

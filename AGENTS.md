@@ -30,3 +30,11 @@ Implement v2.6 from approved v2.4 baseline 696a734. On 2026-11-18 the owner expl
 - Keep all seven themes and default corporate; event content remains independent.
 - Run npm test, Python legacy archive tests, preflight, real Firestore emulator tests with Node 24.12+/Java 21+, browser smoke and two independent clients.
 - This request requires PR + screenshots for owner review BEFORE merge/deploy. Do not deploy production rules, create sharedEvent/live, merge or deploy Pages as part of the implementation task.
+
+## Authentication upgrade contract
+- Follow docs/AUTH_ACCESS.md and docs/QA_AUTH.md. Existing Firebase project only; no production resource/account/role changes or billing changes for this implementation task.
+- Mandatory server-verified Admin/Operator access; authRoot first, no Dashboard runtime restore before authorization. No public signup or client role editor.
+- Keep admins/<uid>; operators/<uid> is trusted-channel provisioned. Protect sharedEvent and legacy sharedTheme reads; Admin-only validated CAS writes. validAfter must invalidate auth_time at/before the cutoff.
+- Firebase owns local/session persistence and reset emails. Never manually serialize passwords or tokens. Preserve SDK-restored remembered sessions until a new login explicitly chooses persistence.
+- UID-scope local drafts/catalog and private tab-local draw data. Logout/revocation clears rendered/in-memory private state, stops listeners/audio, preserves snapshots. Never auto-assign unowned legacy sessions to the first login.
+- Feature branch, tests, screenshots and PR review only. This task does not authorize merging or deploying the Authentication upgrade. A later approved release must resolve active legacy sessions and coordinate final rules/client cutover.

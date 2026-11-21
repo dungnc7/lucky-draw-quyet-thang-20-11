@@ -1,13 +1,14 @@
 /* One public configuration authority. Runtime people/winners never enter this adapter. */
 (async function(){
 'use strict';
-if(!window.EventSettings||!window.LuckyDrawSettingsBridge)return;
+if(!window.EventSettings||!window.LuckyDrawSettingsBridge||!window.LuckyDrawAccess)return;
+const access=window.LuckyDrawAccess;
 window.ProgramSettingsActive=true;
 const M=EventSettings,bridge=LuckyDrawSettingsBridge,$=id=>document.getElementById(id);
 const mount=$('programSettingsMount');if(!mount)return;
 const prizeKeys=SharedConfiguration.PRIZES.map(p=>p.key);
 mount.innerHTML=`<section class="program-settings side-section" aria-labelledby="settingsHeading">
- <div class="settings-heading"><span class="settings-icon">✦</span><div><h2 id="settingsHeading">Cài đặt chương trình</h2><p>Chỉnh sửa · xem trước · lưu chung</p></div></div>
+ <div class="settings-heading"><span class="settings-icon">✦</span><div><h2 id="settingsHeading">Cài đặt chương trình</h2><p id="settingsHelp">Chỉnh sửa · xem trước · lưu chung</p></div></div>
  <div class="settings-state" role="status" aria-live="polite"><i id="settingsDot"></i><strong id="settingsStatus">Đang tải...</strong></div>
  <p id="settingsVersion" class="settings-meta"></p><p id="settingsNotice" class="settings-notice" role="status"></p>
  <details class="settings-group" open><summary><span>01</span> Thông tin</summary><div class="settings-fields">
@@ -38,14 +39,14 @@ mount.innerHTML=`<section class="program-settings side-section" aria-labelledby=
   <label for="musicFile" class="settings-local-track">♫ Chọn nhạc riêng trên máy</label><p class="settings-meta">File nhạc riêng chỉ dùng trên máy này, không tải lên Firebase.</p>
  </div></details>
  <div class="settings-savebar"><button id="settingsSave" type="button" disabled>Lưu &amp; áp dụng cho tất cả thiết bị</button><button id="settingsDiscard" type="button" class="settings-link" hidden>Bỏ thay đổi và dùng bản mới nhất</button></div>
- <details class="settings-auth"><summary>Quản trị viên</summary><form id="settingsLogin"><label>Email<input id="settingsEmail" type="email" autocomplete="username" required></label><label>Mật khẩu<input id="settingsPassword" type="password" autocomplete="current-password" required></label><button class="secondary-btn full" type="submit">Đăng nhập</button></form><button id="settingsLogout" type="button" class="secondary-btn full" hidden>Đăng xuất</button><p id="settingsAuthStatus" class="settings-meta">Khách xem không cần đăng nhập.</p></details>
+
 </section>`;
 $('settingsTheme').replaceChildren(...EventPlatform.THEMES.map(t=>new Option(t.name+(t.id===EventPlatform.DEFAULT_THEME_ID?' · Mặc định':''),t.id)));
 let editor=null,live=false,allowed=false,busy=false,error=false,invalid=false,bootstrapping=false;
-let auth,fs,authMod,ref,db,roleRequest=0,pendingNotice='',legacyJson=null,legacyTheme=null,reloadLegacy=async()=>{};
+let auth,fs,ref,db,controllerUid=null,controllerRole=null,generation=0,stopConfig=null,stopLegacy=null,pendingNotice='',legacyJson=null,legacyTheme=null,reloadLegacy=async()=>{};
 const fields=[...mount.querySelectorAll('.settings-fields input,.settings-fields textarea,.settings-fields select')];
-function storage(){try{return window.localStorage}catch{return null}}
-function saveDraft(){try{if(editor?.dirty)storage()?.setItem(M.DRAFT_KEY,JSON.stringify({baseRevision:editor.baseRevision,settings:editor.draft}));else storage()?.removeItem(M.DRAFT_KEY)}catch{pendingNotice='Không lưu được bản sửa trên máy; giữ trang mở trước khi lưu.'}}
+function storage(){return access.canOperate()?access.localStorage():null}
+function saveDraft(){if(!allowed)return;try{if(editor?.dirty)storage()?.setItem(M.DRAFT_KEY,JSON.stringify({baseRevision:editor.baseRevision,settings:editor.draft}));else storage()?.removeItem(M.DRAFT_KEY)}catch{pendingNotice='Không lưu được bản sửa trên máy; giữ trang mở trước khi lưu.'}}
 function fill(){
  if(!editor)return;const c=editor.draft,e=c.event;
  const values={settingsPreset:e.presetId,settingsName:e.content.title,settingsOrganization:e.details.organization,settingsDate:e.details.date,settingsSubtitle:e.content.kicker,settingsOccasion:e.content.occasion,settingsBrandLabel:e.content.brandLabel,settingsLogoMode:e.appearance.logo.kind,settingsLogoUrl:e.appearance.logo.url||'',settingsCompletedTitle:e.content.completedTitle,settingsCompletedMessage:e.content.completedMessage,settingsTheme:e.appearance.themeId,settingsBackground:e.appearance.background.kind,settingsColor:e.appearance.background.color||'#0D1B3D'};
@@ -70,40 +71,42 @@ function visual(){
 }
 function paint(){
  const dirty=!!editor?.dirty||invalid;
+ $('settingsHelp').textContent=allowed?'Chỉnh sửa · xem trước · lưu chung':'Chỉ xem · vận hành phiên quay';
  $('settingsStatus').textContent=error&&!live?'Không thể lưu — kiểm tra kết nối':busy?'Đang lưu...':error||!live?'Không thể lưu — kiểm tra kết nối':dirty||bootstrapping?'Có thay đổi chưa lưu':'Đã đồng bộ';
  $('settingsDot').dataset.state=busy?'saving':error||!live?'offline':dirty||bootstrapping?'dirty':'synced';
  $('settingsVersion').textContent=editor?.latest?'Phiên bản '+editor.latest.revision+' · '+new Intl.DateTimeFormat('vi-VN',{dateStyle:'short',timeStyle:'short'}).format(new Date(editor.latest.updatedAt)):bootstrapping?'Giữ nguyên cài đặt hiện tại · chưa chuyển đổi sang Firebase':'';
  const warnings=[];if(editor?.conflicted)warnings.push('Có bản mới từ Admin khác. Bản sửa của bạn được giữ nguyên; hãy xem bản mới trước khi lưu.');if(bridge.locked())warnings.push('Phiên đang mở giữ nguyên người trúng, tiền giải và cơ cấu đã khóa. Cài đặt mới áp dụng cho phiên tiếp theo; chỉ theme được xem trước ngay.');if(pendingNotice)warnings.push(pendingNotice);
  $('settingsNotice').textContent=warnings.join(' ');
- $('settingsSave').disabled=!editor||!allowed||!live||busy||invalid||editor.conflicted||(!dirty&&!bootstrapping);
- $('settingsDiscard').hidden=(!editor?.latest&&!bootstrapping)||(!dirty&&!editor?.conflicted);
+ $('settingsSave').hidden=!allowed;$('settingsSave').disabled=!editor||!allowed||!live||busy||invalid||editor.conflicted||(!dirty&&!bootstrapping);
+ $('settingsDiscard').hidden=!allowed||(!editor?.latest&&!bootstrapping)||(!dirty&&!editor?.conflicted);
  for(const input of fields)if(!input.readOnly)input.disabled=!allowed||busy||!editor;
 }
 function apply(preview=false){if(!editor)return;const c=preview?editor.draft:editor.latest?.settings||editor.draft;bridge.apply(c,{preview,revision:editor.latest?.revision||1,updatedAt:editor.latest?.updatedAt});}
 function initialize(seed){
  if(editor)return;editor=new M.Editor(seed);
- try{const draft=storage()?.getItem(M.DRAFT_KEY);if(draft)editor.restoreDraft(JSON.parse(draft));}catch{pendingNotice='Không đọc được bản sửa cục bộ; chưa ghi đè dữ liệu đã lưu.'}
+ try{const draft=allowed&&storage()?.getItem(M.DRAFT_KEY);if(draft)editor.restoreDraft(JSON.parse(draft));}catch{pendingNotice='Không đọc được bản sửa cục bộ; chưa ghi đè dữ liệu đã lưu.'}
  fill();
 }
 function receive(raw,{cached=false}={}){
  const d=M.document(raw,{cached});initialize(d.settings);const adopted=editor.receive(raw,{cached});
  if(!cached){live=true;bootstrapping=false;error=false;try{storage()?.setItem(M.CACHE_KEY,JSON.stringify(d));}catch{}}
- if(adopted){fill();apply(false);}else if(editor.dirty){apply(true);}saveDraft();paint();
+ if(adopted){fill();apply(false);}else if(editor.dirty){apply(true);}saveDraft();bridge.ready(!cached);paint();
 }
 function changed(){
- if(!editor||!allowed||busy)return;
+ if(!editor||!allowed||!access.canAdmin()||busy)return;
  try{editor.edit(read());invalid=false;error=false;pendingNotice='';visual();apply(true);saveDraft();}catch(e){invalid=true;editor.dirty=true;pendingNotice=e.message;}
  paint();
 }
 for(const input of fields)if(input.id!=='settingsPreset'&&!input.readOnly)input.addEventListener(input.type==='checkbox'||input.tagName==='SELECT'||input.type==='color'?'change':'input',changed);
 $('settingsPreset').addEventListener('change',()=>{
- if(!editor||!allowed)return;
+ if(!editor||!allowed||!access.canAdmin())return;
  const preset=$('settingsPreset').value;
  if(bridge.locked()&&!window.confirm('Đang có phiên quay. Chuyển chương trình chỉ áp dụng cho phiên mới, không xóa hay thay kết quả hiện tại. Tiếp tục chuẩn bị cài đặt mới?')){fill();return;}
  const e=EventPlatform.createEvent(preset,'evt-'+crypto.randomUUID().split('-').map(s=>'e'+s.slice(0,8)).join('-'));
  editor.draft.event={...editor.draft.event,id:e.id,presetId:e.presetId,content:e.content};fill();changed();
 });
 $('settingsDiscard').addEventListener('click',async()=>{
+ if(!access.canAdmin())return;
  if(editor?.dirty&&!window.confirm('Bỏ bản sửa trên máy và xem cấu hình đã đồng bộ mới nhất?'))return;
  if(!editor?.latest){storage()?.removeItem(M.DRAFT_KEY);editor=null;invalid=false;error=false;pendingNotice='';await reloadLegacy();return;}
  editor?.acceptLatest();invalid=false;error=false;pendingNotice='';fill();apply(false);saveDraft();paint();
@@ -111,56 +114,63 @@ $('settingsDiscard').addEventListener('click',async()=>{
 function offline(){live=false;if(busy)error=true;paint();}
 window.addEventListener('offline',offline);window.addEventListener('online',()=>{pendingNotice='Đang kiểm tra lại kết nối; bản sửa trên máy vẫn được giữ.';paint();});
 window.addEventListener('beforeunload',event=>{if(editor?.dirty||invalid){event.preventDefault();event.returnValue='';}});
-try{const cached=storage()?.getItem(M.CACHE_KEY);if(cached)receive(JSON.parse(cached),{cached:true});}catch{pendingNotice='Bản lưu trên máy không hợp lệ. Đang chờ cấu hình từ máy chủ.'}
 paint();
-try{
- if(!/^https?:$/.test(location.protocol))throw Error('Mở trang đã tải trước để dùng offline; cần kết nối để lưu chung.');
- const url='https://www.gstatic.com/firebasejs/13.4.0/';
- const [app,firestore,authLibrary]=await Promise.all([import(url+'firebase-app.js'),import(url+'firebase-firestore.js'),import(url+'firebase-auth.js')]);
- fs=firestore;authMod=authLibrary;const firebaseApp=app.initializeApp(window.LUCKYDRAW_CLOUD_CONFIG);db=fs.getFirestore(firebaseApp);auth=authMod.getAuth(firebaseApp);ref=fs.doc(db,...M.PATH.split('/'));
- await authMod.setPersistence(auth,authMod.browserSessionPersistence);
- authMod.onAuthStateChanged(auth,async user=>{
-  const request=++roleRequest;allowed=false;$('settingsLogin').hidden=!!user;$('settingsLogout').hidden=!user;paint();
-  if(!user){$('settingsAuthStatus').textContent='Khách xem không cần đăng nhập. Đăng nhập Admin để chỉnh sửa.';return;}
-  try{const r=await fs.getDocFromServer(fs.doc(db,'admins',user.uid));if(request!==roleRequest||auth.currentUser?.uid!==user.uid)return;allowed=r.exists()&&r.data().enabled===true;$('settingsAuthStatus').textContent=allowed?'Đã xác nhận quyền Admin.':'Tài khoản không có quyền chỉnh sửa.';}
-  catch{$('settingsAuthStatus').textContent='Không xác minh được quyền Admin — kiểm tra kết nối.';}
-  paint();
- });
+function stop(){
+ generation++;stopConfig?.();stopConfig=null;stopLegacy?.();stopLegacy=null;
+ editor=null;allowed=false;live=false;busy=false;error=false;invalid=false;bootstrapping=false;controllerUid=null;controllerRole=null;
+ legacyJson=null;legacyTheme=null;pendingNotice='';
+ for(const input of fields){if(!input.readOnly){input.value='';input.checked=false;input.disabled=true;}}
+ $('settingsVersion').textContent='';$('settingsNotice').textContent='';paint();
+}
+async function start(session){
+ const ticket=++generation;controllerUid=session.uid;controllerRole=session.role;allowed=session.role==='admin';
+ const isCurrent=()=>ticket===generation&&access.canOperate()&&access.snapshot().uid===session.uid;
+ try{
+  ({fs,db,auth}=access.service());ref=fs.doc(db,...M.PATH.split('/'));
+  try{const cached=storage()?.getItem(M.CACHE_KEY);if(cached)receive(JSON.parse(cached),{cached:true});}catch{pendingNotice='Bản lưu trên máy không hợp lệ. Đang chờ cấu hình từ máy chủ.'}
  // Legacy sources are a migration input only. Once sharedEvent/live exists they stop being authorities.
- let stopLegacy=null,loadingLegacy=false;
+ let loadingLegacy=false;
  async function loadLegacy(){
-  if(loadingLegacy||editor?.latest)return;stopLegacy?.();stopLegacy=null;loadingLegacy=true;
+  if(!isCurrent()||loadingLegacy||editor?.latest)return;stopLegacy?.();stopLegacy=null;loadingLegacy=true;
   try{
-   legacyJson=await SharedConfiguration.fetchPublished(fetch,new URL('./config/published.json',location.href).href);
-   const snap=await fs.getDocFromServer(fs.doc(db,'sharedTheme','live'));legacyTheme=snap.exists()?snap.data():null;
+   const input=await SharedConfiguration.fetchPublished(fetch,new URL('./config/published.json',location.href).href);
+   const snap=await fs.getDocFromServer(fs.doc(db,'sharedTheme','live'));
+   if(!isCurrent())return;legacyJson=input;legacyTheme=snap.exists()?snap.data():null;
    const seed=M.migrate(legacyJson,legacyTheme);initialize(seed);if(!editor.dirty){editor.draft=seed;fill();apply(false);}bootstrapping=true;live=true;error=false;
    stopLegacy=fs.onSnapshot(fs.doc(db,'sharedTheme','live'),{includeMetadataChanges:true},s=>{
-    if(editor?.latest||s.metadata.fromCache||s.metadata.hasPendingWrites)return;
+    if(!isCurrent()||editor?.latest||s.metadata.fromCache||s.metadata.hasPendingWrites)return;
     const incoming=s.exists()?s.data():null;const token=x=>x?JSON.stringify([x.schemaVersion,x.themeId,x.updatedAt?.toDate?.().toISOString()]):'null';if(token(incoming)===token(legacyTheme))return;
     const migrated=M.migrate(legacyJson,incoming);
     if(!editor.dirty){legacyTheme=incoming;editor.draft=migrated;fill();apply(false);}else{editor.conflicted=true;pendingNotice='Theme cũ vừa thay đổi. Tải lại để xem trước khi chuyển đổi lần đầu.';}paint();
    });
-  }catch(e){live=false;error=true;pendingNotice=e.message;}finally{loadingLegacy=false;paint();}
+  }catch(e){if(isCurrent()){live=false;error=true;pendingNotice=e.message;}}finally{loadingLegacy=false;if(isCurrent())paint();}
  }
  reloadLegacy=loadLegacy;
- fs.onSnapshot(ref,{includeMetadataChanges:true},snap=>{
-  if(snap.metadata.hasPendingWrites)return;
-  if(snap.metadata.fromCache){live=false;paint();return;}
+ stopConfig=fs.onSnapshot(ref,{includeMetadataChanges:true},snap=>{
+  if(!isCurrent()||snap.metadata.hasPendingWrites)return;
+  if(snap.metadata.fromCache){live=false;bridge.ready(false);paint();return;}
   try{if(snap.exists()){stopLegacy?.();receive(snap.data());}else if(editor?.latest){throw Error('Thiếu cấu hình đã đồng bộ; không tự quay về nguồn cũ.');}else loadLegacy();}
-  catch(e){live=false;error=true;pendingNotice=e.message;paint();}
- },e=>{live=false;error=true;pendingNotice='Không tải được cấu hình Firebase: '+(e.code||'lỗi kết nối');paint();});
- $('settingsLogin').addEventListener('submit',async e=>{e.preventDefault();try{await authMod.signInWithEmailAndPassword(auth,$('settingsEmail').value.trim(),$('settingsPassword').value);}catch{ $('settingsAuthStatus').textContent='Không đăng nhập được. Kiểm tra tài khoản và kết nối.';}finally{$('settingsPassword').value='';}});
- $('settingsLogout').addEventListener('click',async()=>{allowed=false;paint();await authMod.signOut(auth);});
- $('settingsSave').addEventListener('click',async()=>{
-  if(busy||!editor)return;
+  catch(e){live=false;bridge.ready(false);error=true;pendingNotice=e.message;paint();}
+ },e=>{if(!isCurrent())return;live=false;bridge.ready(false);error=true;pendingNotice='Không tải được cấu hình Firebase: '+(e.code||'lỗi kết nối');paint();});
+ }catch(e){if(isCurrent()){live=false;error=true;pendingNotice=e.message;paint();}}
+}
+$('settingsSave').addEventListener('click',async()=>{
+  if(busy||!editor||!access.canAdmin())return;
+  const ticket=generation,uid=controllerUid;
+  if(!await access.verify()||!access.canAdmin()||ticket!==generation)return;
   if(!live||navigator.onLine===false){error=true;paint();return;}
   if(!allowed||editor.conflicted)return;
   try{
    const proposed=read();busy=true;error=false;pendingNotice='';paint();
-   const result=await M.publish({currentUser:()=>auth.currentUser,isAdmin:async()=>{if(!auth.currentUser)return false;const role=await fs.getDocFromServer(fs.doc(db,'admins',auth.currentUser.uid));return role.exists()&&role.data().enabled===true;},serverTimestamp:fs.serverTimestamp,transaction:fn=>fs.runTransaction(db,async transaction=>fn({read:async()=>{const s=await transaction.get(ref);if(!s.exists()){const old=await transaction.get(fs.doc(db,'sharedTheme','live'));const token=x=>x?JSON.stringify([x.schemaVersion,x.themeId,x.updatedAt?.toDate?.().toISOString()]):'null';if(token(old.exists()?old.data():null)!==token(legacyTheme)){const e=Error('Theme cũ vừa được cập nhật. Xem bản mới trước khi chuyển đổi.');e.code='settings/conflict';throw e;}}return s.exists()?s.data():null;},write:data=>transaction.set(ref,data)})),readServer:async()=>{const s=await fs.getDocFromServer(ref);if(!s.exists())throw Error('Chưa xác nhận được cấu hình.');return s.data();}},proposed,editor.baseRevision);
+   const result=await M.publish({currentUser:()=>auth.currentUser,isAdmin:async()=>access.canAdmin()&&auth.currentUser?.uid===uid&&await access.verify(),serverTimestamp:fs.serverTimestamp,transaction:fn=>fs.runTransaction(db,async transaction=>fn({read:async()=>{const s=await transaction.get(ref);if(!s.exists()){const old=await transaction.get(fs.doc(db,'sharedTheme','live'));const token=x=>x?JSON.stringify([x.schemaVersion,x.themeId,x.updatedAt?.toDate?.().toISOString()]):'null';if(token(old.exists()?old.data():null)!==token(legacyTheme)){const e=Error('Theme cũ vừa được cập nhật. Xem bản mới trước khi chuyển đổi.');e.code='settings/conflict';throw e;}}return s.exists()?s.data():null;},write:data=>transaction.set(ref,data)})),readServer:async()=>{const s=await fs.getDocFromServer(ref);if(!s.exists())throw Error('Chưa xác nhận được cấu hình.');return s.data();}},proposed,editor.baseRevision);
+   if(ticket!==generation||!access.canAdmin())return;
    editor.confirm(result.confirmed);try{storage()?.setItem(M.CACHE_KEY,JSON.stringify(editor.latest));}catch{}bootstrapping=false;pendingNotice=result.superseded?'Một Admin khác đã lưu bản mới hơn sau lần lưu này; đang hiển thị bản mới nhất.':'';invalid=false;live=true;fill();apply(false);saveDraft();
-  }catch(e){error=true;if(e.code==='settings/conflict'){editor.conflicted=true;pendingNotice=e.message;}else pendingNotice='Chưa xác nhận lưu thành công. Bản sửa vẫn ở trên máy. '+e.message;}
-  finally{busy=false;paint();}
+  }catch(e){if(ticket!==generation)return;error=true;if(e.code==='settings/conflict'){editor.conflicted=true;pendingNotice=e.message;}else pendingNotice='Chưa xác nhận lưu thành công. Bản sửa vẫn ở trên máy. '+e.message;}
+  finally{if(ticket===generation){busy=false;paint();}}
  });
-}catch(e){live=false;error=true;pendingNotice=e.message;paint();}
+access.onChange(session=>{
+ if(session.phase!=='authorized'){stop();return;}
+ if(controllerUid===session.uid&&controllerRole===session.role){paint();return;}
+ stop();void start(session);
+});
 })();

@@ -4,13 +4,21 @@ Nền tảng quay thưởng cho Ngày Nhà giáo Việt Nam 20/11, Year End Part
 
 Website: [dungnc7.github.io/lucky-draw-quyet-thang-20-11](https://dungnc7.github.io/lucky-draw-quyet-thang-20-11/)
 
-## Cài đặt chương trình (review candidate)
+## Đăng nhập và phân quyền (PR chờ duyệt)
 
-Thông tin · Giao diện · Giải thưởng · Âm thanh trong một bảng Admin. Xem trước bản sửa, rồi **Lưu & áp dụng cho tất cả thiết bị** bằng tài khoản Admin. Khách xem không cần đăng nhập. Firebase `sharedEvent/live` đồng bộ toàn bộ cấu hình công khai; revision transaction ngăn ghi đè bản mới. Chỉ sửa tên và tiền giải: giữ 44 người, 13 lượt, 10 giây/lượt.
+Login bắt buộc trước khi mở Dashboard. Firebase khôi phục phiên, xác minh quyền Admin/Nhân viên vận hành từ máy chủ; tài khoản chưa được cấp quyền bị chặn. Có Ghi nhớ đăng nhập, hiện/ẩn mật khẩu, Quên mật khẩu và menu Đăng xuất. Admin được lưu cài đặt chung; Operator chỉ xem cấu hình và vận hành quay/import/export. Không có đăng ký công khai hoặc tự cấp quyền.
+
+Phiên quay và bản sửa trên máy được tách theo UID. Đăng xuất giữ bản đã lưu để chính tài khoản đó khôi phục; tài khoản khác không tự nhìn thấy phiên trước. Phiên cũ chưa gắn UID được giữ nguyên nhưng cần chủ phiên kiểm tra trước khi nâng cấp. Không deploy giữa một phiên thật chưa xử lý việc này.
+
+Xem [kiến trúc/quyền và thứ tự release](docs/AUTH_ACCESS.md), [bằng chứng kiểm thử và giới hạn](docs/QA_AUTH.md). **Chưa merge/deploy bản Authentication này.** Website hiện tại vẫn là bản cài đặt chung trước nâng cấp login.
+
+## Cài đặt chương trình
+
+Thông tin · Giao diện · Giải thưởng · Âm thanh trong một bảng Admin. Xem trước bản sửa, rồi **Lưu & áp dụng cho tất cả thiết bị** bằng tài khoản Admin. Trong bản Auth candidate, chỉ tài khoản được cấp quyền mới xem được cấu hình. Firebase `sharedEvent/live` đồng bộ toàn bộ cấu hình công khai; revision transaction ngăn ghi đè bản mới. Chỉ sửa tên và tiền giải: giữ 44 người, 13 lượt, 10 giây/lượt.
 
 Giữ 7 theme, mặc định **Sắc Màu Quyết Thắng**. Dữ liệu nhân viên, CCCD, kết quả và phiên quay luôn ở riêng trên máy. Cấu hình phiên đang quay được khóa; cập nhật theme không ngắt đồng hồ. Excel nhập/xuất và audit giữ nguyên.
 
-Xem [hướng dẫn kiến trúc, chuyển đổi và kiểm thử](docs/SIMPLIFIED_SETTINGS.md). JSON publication và theme-only là luồng lịch sử; các mục dưới đây chỉ mô tả bản cũ nếu đề cập những nút đã bỏ. **Chưa merge/deploy tính năng mới: PR và ảnh chụp cần được duyệt trước.**
+Xem [hướng dẫn kiến trúc, chuyển đổi và kiểm thử](docs/SIMPLIFIED_SETTINGS.md). JSON publication và theme-only là luồng lịch sử đã được thay bằng cài đặt chung. Bản Authentication trên nhánh này vẫn cần duyệt PR trước khi release.
 
 ## Cấu hình
 
@@ -26,7 +34,7 @@ Tổng 44 người khác nhau, 13 lượt, 130 giây đếm ngược; thời gia
 
 ## Vận hành
 
-1. Open online to load the shared Firebase configuration. Admins can preview and save settings. An already-loaded page can use cached server-confirmed settings offline; shared Save requires network. First-time loading and Firebase SDK loading require network.
+1. Mở online và đăng nhập tài khoản được cấp quyền. Admin xem trước/lưu cài đặt; Operator vận hành phiên. Không dùng cache để bỏ qua xác minh quyền. Mất kết nối sẽ khóa giao diện và giữ snapshot để khôi phục sau khi xác minh lại.
 2. Chọn hoặc kéo thả Excel `.xlsx`/`.xlsm` hoặc CSV, ít nhất 44 nhân viên hợp lệ. Ưu tiên cột **Mã nhân viên**, **Họ tên**; **Phòng ban** và **Số CCCD** tùy chọn. Không chạy macro/formula. `.xls` cũ cần lưu lại thành `.xlsx`.
 3. Review invalid/duplicate import rows. Admins can edit prize names and amounts in the settings section. Fixed allocation and duration stay unchanged. Active sessions retain their frozen amounts until an explicit new session.
 4. Dùng **Chế độ sân khấu** để ẩn quản trị và yêu cầu fullscreen khi trình duyệt hỗ trợ. Có thể dùng fullscreen của trình duyệt nếu yêu cầu này bị từ chối. Màn hình 16:9 1366×768 và 1920×1080 đã kiểm tra bố cục.

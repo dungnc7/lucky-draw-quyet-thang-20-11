@@ -4,14 +4,14 @@ const {initializeTestEnvironment,assertSucceeds,assertFails}=require('@firebase/
 const {doc,setDoc,getDoc,getDocFromServer,getDocs,collection,deleteDoc,updateDoc,serverTimestamp,Timestamp,runTransaction,onSnapshot,disableNetwork,enableNetwork,waitForPendingWrites}=require('firebase/firestore');
 const {EventSettings:M}=require('../scripts/validate_config.cjs');
 const clone=x=>JSON.parse(JSON.stringify(x));const seed=()=>clone(M.migrate(require('../config/published.json')));let env;
-const cfg=db=>doc(db,'sharedEvent/live'),user=uid=>env.authenticatedContext(uid).firestore(),guest=()=>env.unauthenticatedContext().firestore();
+const cfg=db=>doc(db,'sharedEvent/live'),user=uid=>env.authenticatedContext(uid,{auth_time:100}).firestore(),guest=()=>user('operator'),anon=()=>env.unauthenticatedContext().firestore();
 const value=(revision=1,settings=seed())=>({schemaVersion:2,revision,updatedAt:serverTimestamp(),settings});
 before(async()=>{if(!process.env.FIRESTORE_EMULATOR_HOST)throw Error('Emulator required');const [host,port]=process.env.FIRESTORE_EMULATOR_HOST.split(':');env=await initializeTestEnvironment({projectId:'demo-lucky-settings-security',firestore:{host,port:Number(port),rules:fs.readFileSync('firestore.rules','utf8')}});});
 after(async()=>{if(env)await env.cleanup()});
-beforeEach(async()=>{await env.clearFirestore();await env.withSecurityRulesDisabled(c=>setDoc(doc(c.firestore(),'admins/admin'),{enabled:true}));});
-test('public exact document read needs no login; list/private reads and unauthorized writes denied',async()=>{
- await assertSucceeds(getDoc(cfg(guest())));await assertFails(getDocs(collection(guest(),'sharedEvent')));await assertFails(getDoc(doc(guest(),'admins/admin')));
- await assertFails(setDoc(cfg(guest()),value()));await assertFails(setDoc(cfg(user('member')),value()));await assertFails(setDoc(doc(user('member'),'admins/member'),{enabled:true}));
+beforeEach(async()=>{await env.clearFirestore();await env.withSecurityRulesDisabled(async c=>{await setDoc(doc(c.firestore(),'admins/admin'),{enabled:true});await setDoc(doc(c.firestore(),'operators/operator'),{enabled:true});});});
+test('approved Operator can read exact config; anonymous/unknown users and unauthorized writes denied',async()=>{
+ await assertFails(getDoc(cfg(anon())));await assertFails(getDoc(cfg(user('unknown'))));await assertSucceeds(getDoc(cfg(guest())));await assertFails(getDocs(collection(guest(),'sharedEvent')));await assertFails(getDoc(doc(guest(),'admins/admin')));
+ await assertFails(setDoc(cfg(anon()),value()));await assertFails(setDoc(cfg(guest()),value()));await assertFails(setDoc(cfg(user('member')),value()));await assertFails(setDoc(doc(user('member'),'admins/member'),{enabled:true}));
 });
 test('authorized save then reload retains all settings and strict server timestamp',async()=>{
  const s=seed();s.event.content.title='Chương trình thử nghiệm';s.draw.prizes[0].name='Giải tri ân';s.draw.prizes[0].amount=250000;s.audio.celebrationEnabled=false;
@@ -63,4 +63,21 @@ test('every preset and bounded public fields remain writable; missing required n
 });
 test('role revocation prevents further writes even with a previously authenticated client',async()=>{
  const db=user('admin');await setDoc(cfg(db),value());await env.withSecurityRulesDisabled(c=>setDoc(doc(c.firestore(),'admins/admin'),{enabled:false}));await assertFails(setDoc(cfg(db),value(2)));
+});
+
+test('Operator roles cannot be self-provisioned or granted by a browser Admin',async()=>{
+ for(const uid of ['admin','operator','unknown']){
+  const db=user(uid);await assertFails(setDoc(doc(db,'operators',uid),{enabled:true}));await assertFails(setDoc(doc(db,'operators','another'),{enabled:true}));await assertFails(deleteDoc(doc(db,'operators/operator')));
+ }
+ await assertFails(getDocs(collection(user('admin'),'operators')));await assertFails(getDoc(doc(user('admin'),'operators/operator')));
+});
+test('session cutoff revokes direct reads/writes until a newer authenticated session',async()=>{
+ await setDoc(cfg(user('admin')),value());
+ await env.withSecurityRulesDisabled(c=>setDoc(doc(c.firestore(),'admins/admin'),{enabled:true,validAfter:100}));
+ await assertFails(getDoc(cfg(user('admin'))));await assertFails(setDoc(cfg(user('admin')),value(2)));
+ const newer=env.authenticatedContext('admin',{auth_time:101}).firestore();await assertSucceeds(getDoc(cfg(newer)));await assertSucceeds(setDoc(cfg(newer),value(2)));
+});
+test('disabled Operator, malformed role and forged profile never grant app access',async()=>{
+ await env.withSecurityRulesDisabled(async c=>{await setDoc(doc(c.firestore(),'operators/disabled'),{enabled:false});await setDoc(doc(c.firestore(),'operators/bad'),{enabled:true,validAfter:'0'});await setDoc(doc(c.firestore(),'users/forged'),{role:'admin'});});
+ for(const uid of ['disabled','bad','forged'])await assertFails(getDoc(cfg(user(uid))));
 });

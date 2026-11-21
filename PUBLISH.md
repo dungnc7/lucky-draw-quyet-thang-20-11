@@ -1,3 +1,5 @@
+> Authentication upgrade candidate: [docs/AUTH_ACCESS.md](docs/AUTH_ACCESS.md). Mandatory server-verified login and protected Firestore reads supersede the former public-viewer/offline-cache behavior below. Release requires owner approval and the coordinated maintenance sequence. Production is unchanged by this branch.
+
 # Release review - Lucky Draw v2.6
 
 Repository: https://github.com/dungnc7/lucky-draw-quyet-thang-20-11

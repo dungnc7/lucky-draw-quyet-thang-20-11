@@ -1,3 +1,5 @@
+> Authentication upgrade candidate: [AUTH_ACCESS.md](AUTH_ACCESS.md). Mandatory server-verified login and protected Firestore reads supersede the former public-viewer/offline-cache behavior below. Release requires owner approval and the coordinated maintenance sequence. Production is unchanged by this branch.
+
 > Current candidate: [Simplified Firebase settings](SIMPLIFIED_SETTINGS.md). The historical JSON publication/theme-only workflow below is superseded for new releases. This PR requires owner review before any merge or production deployment.
 
 # v2.6 architecture
