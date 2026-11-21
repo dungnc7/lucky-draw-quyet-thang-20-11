@@ -353,3 +353,11 @@ test('integrated dynamic UI runs 13/5 remainder batches, freezes remote changes,
  assert.equal(f.app.restoreSession(),true);const won=f.app.state.completed.flatMap(r=>r.winners);assert.equal(won.length,13);assert.equal(new Set(won.map(p=>p.id)).size,13);
  const report=f.context.AwardHandover.build(f.E.snapshot(f.app.state),settings.event);assert.equal(report.count,13);assert.equal(report.complete,true);assert.ok(report.sheets[0].rows.slice(4).every(r=>r[5]===765432));assert.equal(f.el('#totalPrizeValue').textContent,'');
 });
+
+
+test('unsaved dynamic previews cannot start a real session until server-confirmed save or discard',async()=>{
+ const f=fixture();f.app.initEvents();const s=f.context.EventSettings.migrate(JSON.parse(fs.readFileSync('config/published.json','utf8')));
+ f.context.LuckyDrawSettingsBridge.apply(s);f.context.LuckyDrawSettingsBridge.ready(true);await importPeople(f);assert.equal(f.app.canStart(),true);
+ s.draw.prizes[0].count=13;f.context.LuckyDrawSettingsBridge.apply(s,{preview:true});f.context.LuckyDrawSettingsBridge.ready(true);assert.equal(f.app.canStart(),false);f.app.startRound();assert.equal(f.app.state.pending.length,0);
+ f.context.LuckyDrawSettingsBridge.apply(s,{preview:false});f.context.LuckyDrawSettingsBridge.ready(true);assert.equal(f.app.canStart(),true);
+});

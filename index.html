@@ -887,7 +887,7 @@ global.AwardHandover=Object.freeze({build});
 (function(){
 'use strict';
 let DRAW_MS = BatchEngine.DRAW_MS;
-let settingsDeferred=null;
+let settingsDeferred=null,settingsPreviewActive=false;
 const builtinLogo=document.querySelector('.brand-logo')?.getAttribute('src')||'';
 let BATCHES=BatchEngine.BATCHES;
 const currentBatch=()=>{const b=BATCHES[state.roundIndex];DRAW_MS=b?.durationMs||BatchEngine.DRAW_MS;return b};
@@ -1745,17 +1745,17 @@ function acceptEventSettings(settings,{preview=false,revision=1,updatedAt='2000-
   if(!accessAllowed()||preview&&!window.LuckyDrawAccess.canAdmin())throw Error('Chưa được cấp quyền.');
   const publicSettings=EventSettings.validate(settings);
   window.LUCKYDRAW_SHARED_THEME_OVERRIDE=publicSettings.event.appearance.themeId;
-  if(state.locked||state.recoveryBlocked){settingsDeferred={settings:publicSettings,revision,updatedAt};renderTheme();return {deferred:true,eventChanged:publicSettings.event.id!==activeEvent.id};}
+  if(state.locked||state.recoveryBlocked){settingsDeferred={settings:publicSettings,revision,updatedAt,preview};renderTheme();return {deferred:true,eventChanged:publicSettings.event.id!==activeEvent.id};}
   const config=EventSettings.legacy(publicSettings,revision,updatedAt);
   applyPublicConfiguration(config,'published');settingsDeferred=null;
-  if(!preview)configurationReady=true;
+  settingsPreviewActive=preview;configurationReady=!preview;renderStage();
   return {deferred:false};
 }
 window.LuckyDrawSettingsBridge=Object.freeze({
   apply:acceptEventSettings,
   locked:()=>state.locked||state.recoveryBlocked,
   current:()=>configurationForCurrent(),
-  ready:ready=>{if(!state.locked)configurationReady=ready;renderStage()},
+  ready:ready=>{if(!state.locked)configurationReady=ready&&!settingsPreviewActive;renderStage()},
   onReset:()=>{if(settingsDeferred)acceptEventSettings(settingsDeferred.settings,settingsDeferred)}
 });
 
@@ -1770,7 +1770,7 @@ function lockRuntime(){
   clearInterval(state.tickInterval);stopMusic();stopCountdown();
   if(state.musicUrl)URL.revokeObjectURL(state.musicUrl);
   state.musicAudio=null;state.musicUrl=null;state.audioCtx?.suspend?.().catch(()=>{});
-  discardDrawSession();settingsDeferred=null;appliedConfiguration=null;latestPublication=null;explicitOfflineBackup=null;
+  discardDrawSession();settingsDeferred=null;settingsPreviewActive=false;appliedConfiguration=null;latestPublication=null;explicitOfflineBackup=null;
   catalog=EventPlatform.initialCatalog();activeEvent=catalog.events[0];catalogRevision=null;catalogBlocked=false;sharedMode='draft';configurationReady=false;
   el.resultPanel.innerHTML='';el.reel.textContent='';el.report.textContent='';el.summary.innerHTML='';el.toast.textContent='';el.musicFileName.textContent='';el.name.value='';el.file.value='';$('#revealGrid').innerHTML='';
   el.shell.classList.remove('projector','sidebar-open');state.projector=false;
