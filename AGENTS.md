@@ -23,13 +23,10 @@ Implement v2.6 from approved v2.4 baseline 696a734. On 2026-11-18 the owner expl
 - Verify the actual public endpoint and deployment status before claiming a release is live. Document what was tested and any manual validation still required.
 
 ## Shared configuration contract
-- Versioned public JSON is distinct from local drafts and private sessionStorage. Follow docs/SHARED_CONFIGURATION.md.
-- Publish through authenticated CLI/Actions; no client secrets, no private runtime data in JSON or workflow inputs. Review all public prose for sensitive content.
-- Strict schema/client/rules validation, monotonic revisions, explicit offline backup and immutable active snapshots must fail safely. Never apply remote settings to a locked session.
-- Run Python publication tests in addition to preflight and all Node tests. Never rewrite existing config/versions files; new content needs a new revision.
-
-## Firebase visual theme boundary
-- Firestore is restricted to `sharedTheme/live` (schemaVersion/themeId/server updatedAt) and privately provisioned `admins/<uid>` roles. Never upload any employee/session data.
-- All client writes require authenticated Admin membership and deployed strict rules. No browser signup or self-grant, no source UID allowlist, no service keys or passwords in Git/CI.
-- Run npm test and actual emulator rules tests with Node 24.12+ / Java 21+, plus existing preflight and Python tests. Preserve all seven themes and draw-critical configuration; cloud overrides CSS only.
-- Merge/deploy only after Admin button and two-browser realtime checks, CI success and owner-authorized role setup.
+- Follow docs/SIMPLIFIED_SETTINGS.md. sharedEvent/live schema 2 is the authoritative public configuration after explicit first Admin Save. Existing JSON archives and sharedTheme are migration inputs only before cutover.
+- One Cài đặt chương trình UI with four groups and one Save. Remove obsolete publication controls/workflow; retain legacy snapshot readers for private recovery only.
+- Prize names/amounts are editable; approved allocation and 10-second duration are fixed. Never upload roster, CCCD, winners, runtime or credentials.
+- Admin-only transaction writes, exact monotonic revision, server timestamp and confirmation. Preserve dirty drafts on remote edits, fail safely offline/unsupported schemas, freeze active sessions except CSS theme.
+- Keep all seven themes and default corporate; event content remains independent.
+- Run npm test, Python legacy archive tests, preflight, real Firestore emulator tests with Node 24.12+/Java 21+, browser smoke and two independent clients.
+- This request requires PR + screenshots for owner review BEFORE merge/deploy. Do not deploy production rules, create sharedEvent/live, merge or deploy Pages as part of the implementation task.

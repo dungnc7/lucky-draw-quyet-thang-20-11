@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-"""Validate/review public-only proposals; authenticated publication happens in GitHub Actions."""
+"""Legacy archive maintenance only; remote publication is retired."""
 import argparse
-import base64
 from datetime import datetime, timezone
 import json
 from pathlib import Path
@@ -10,7 +9,6 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 MAX_BYTES = 32768
-DEFAULT_REPO = 'dungnc7/lucky-draw-quyet-thang-20-11'
 
 def prepare(input_path, root=ROOT, published_at=None):
     path = Path(input_path)
@@ -46,7 +44,7 @@ def main():
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument('--dry-run', action='store_true', help='Validate and show exactly the public configuration; write nothing')
     mode.add_argument('--apply', action='store_true', help='Prepare next version in this checkout; does not push or deploy')
-    mode.add_argument('--dispatch', action='store_true', help='Submit a locally validated proposal to the authenticated GitHub workflow')
+    mode.add_argument('--dispatch', action='store_true', help='Retired: shared settings are saved through Firebase')
     args = parser.parse_args()
     try:
         config = prepare(args.input)
@@ -57,16 +55,7 @@ def main():
             archive = apply(config)
             print('Prepared public revision', config['publication']['revision'], 'at', archive.relative_to(ROOT))
         else:
-            # gh uses existing authorization outside the browser. Never accept tokens from page data.
-            permission = subprocess.run(['gh', 'api', f'repos/{DEFAULT_REPO}', '--jq', '.permissions.push'], capture_output=True, text=True, check=True)
-            if permission.stdout.strip() != 'true':
-                raise ValueError('Current GitHub account needs repository write permission')
-            # Send the already validated snapshot, not a second read of a potentially changed file.
-            proposal = {**config, 'publication': dict(state='draft', revision=0, baseRevision=config['publication']['baseRevision'], publishedAt=None)}
-            original = json.dumps(proposal, ensure_ascii=False).encode('utf-8')
-            request = {'ref': 'main', 'inputs': {'configuration_base64': base64.b64encode(original).decode('ascii')}}
-            subprocess.run(['gh', 'api', '--method', 'POST', f'repos/{DEFAULT_REPO}/actions/workflows/publish-event-config.yml/dispatches', '--input', '-'], input=json.dumps(request), text=True, check=True)
-            print('Publication workflow requested. This is not proof of deployment; verify Actions and the public JSON before announcing it.')
+            raise ValueError('GitHub configuration publication is retired. Use Cài đặt chương trình with Firebase Admin authorization.')
     except (ValueError, OSError, subprocess.CalledProcessError) as error:
         print('Publication refused:', error, file=sys.stderr)
         return 1

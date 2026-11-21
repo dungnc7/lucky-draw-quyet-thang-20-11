@@ -1,4 +1,4 @@
-name: Shared theme security and integration
+name: Shared event settings security and integration
 on:
   pull_request:
   push:

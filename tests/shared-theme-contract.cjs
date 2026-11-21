@@ -1,34 +1,11 @@
-const assert=require('node:assert/strict');
-const fs=require('node:fs');
-const cp=require('node:child_process');
-for(const file of ['cloud-theme-sync.js','cloud-theme-config.js']){
-  cp.execFileSync(process.execPath,['--check',file]);
-}
-const html=fs.readFileSync('index.html','utf8');
-const js=fs.readFileSync('cloud-theme-sync.js','utf8');
-const rules=fs.readFileSync('firestore.rules','utf8');
-const config=fs.readFileSync('cloud-theme-config.js','utf8');
-for(const file of ['cloud-theme-config.js','cloud-theme-sync.js','cloud-theme.css']){
-  assert(html.includes('./'+file),file+' not integrated');
-}
-assert(html.includes("LUCKYDRAW_SHARED_THEME_OVERRIDE||activeEvent.appearance.themeId"));
-assert(html.includes("lucky-draw-theme-override',()=>renderTheme()"));
-assert(js.includes("getDoc(fs.doc(db,'admins',user.uid))"));
-assert(js.includes("doc(db,'sharedTheme','live')"));
-assert(js.includes("onSnapshot("));
-assert(js.includes("setPersistence(auth,authMod.browserSessionPersistence)"));
-assert(js.includes("fs.serverTimestamp()"));
-assert(!js.includes('sessionStorage.setItem'));
-assert(!js.includes('Math.random()'));
-assert(rules.includes('allow get: if true;'));
-assert(rules.includes('allow list: if false;'));
-assert(rules.includes('allow create, update: if isAdmin()'));
-assert(rules.includes('request.resource.data.keys().hasOnly'));
-assert(rules.includes('request.resource.data.updatedAt == request.time'));
-assert(rules.includes('allow list, create, update, delete: if false;'));
-const vm=require('node:vm');const context={window:{}};vm.runInNewContext(config,context);
-const publicConfig=context.window.LUCKYDRAW_CLOUD_CONFIG;
-assert.deepEqual(Object.keys(publicConfig).sort(),['apiKey','appId','authDomain','projectId']);
-assert.equal(publicConfig.projectId,'lucky-draw-quyet-thang');
-for(const value of Object.values(publicConfig))assert(value.length>3);
-console.log('PASS shared-theme integration static contract (seven-theme EventPlatform, Firestore admin-only publish, read-only public listeners)');
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),cp=require('node:child_process');
+for(const f of ['cloud-theme-config.js','cloud-theme-sync.js'])cp.execFileSync(process.execPath,['--check',f]);
+const html=fs.readFileSync('index.html','utf8'),js=fs.readFileSync('cloud-theme-sync.js','utf8');
+assert(html.includes('id="programSettingsMount"'));assert(html.includes('id="event-settings"'));
+assert(js.includes('Cài đặt chương trình'));assert(js.includes('Lưu &amp; áp dụng cho tất cả thiết bị'));
+for(const label of ['Thông tin','Giao diện','Giải thưởng','Âm thanh'])assert(js.includes(label));
+assert(!js.includes('configFileInput'));assert(!js.includes('exportConfiguration'));assert(!js.includes('setDoc(docRef'));
+const config={window:{}};vm.runInNewContext(fs.readFileSync('cloud-theme-config.js','utf8'),config);
+assert.equal(config.window.LUCKYDRAW_CLOUD_CONFIG.projectId,'lucky-draw-quyet-thang');
+console.log('PASS unified settings integration and public Firebase identifiers');

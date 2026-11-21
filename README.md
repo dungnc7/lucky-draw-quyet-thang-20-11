@@ -4,25 +4,13 @@ Nền tảng quay thưởng cho Ngày Nhà giáo Việt Nam 20/11, Year End Part
 
 Website: [dungnc7.github.io/lucky-draw-quyet-thang-20-11](https://dungnc7.github.io/lucky-draw-quyet-thang-20-11/)
 
-## Sự kiện và giao diện
+## Cài đặt chương trình (review candidate)
 
-**Sắc Màu Quyết Thắng** (`quyet-thang-corporate`) là mặc định cho cả 3 mẫu sự kiện. Màu thương hiệu: xanh `#2E7BC3`, đỏ `#F2363F`, navy `#0D1B3D`; logo gốc được giữ nguyên.
+Thông tin · Giao diện · Giải thưởng · Âm thanh trong một bảng Admin. Xem trước bản sửa, rồi **Lưu & áp dụng cho tất cả thiết bị** bằng tài khoản Admin. Khách xem không cần đăng nhập. Firebase `sharedEvent/live` đồng bộ toàn bộ cấu hình công khai; revision transaction ngăn ghi đè bản mới. Chỉ sửa tên và tiền giải: giữ 44 người, 13 lượt, 10 giây/lượt.
 
-- **Mẫu cho sự kiện mới** + **Tạo sự kiện từ mẫu** tạo một sự kiện độc lập với `appearance.themeId = 'quyet-thang-corporate'`.
-- **Sự kiện đã lưu** chuyển giữa các sự kiện. **Nội dung sự kiện hiện tại** đổi mẫu nội dung của sự kiện đang mở, giữ theme đã chọn. Không tạo/chuyển sự kiện trong lúc đang quay.
-- **Giao diện** có 7 lựa chọn: Sắc Màu Quyết Thắng, Sen Vàng Đỏ Ngọc (`lotus`), Đêm Vàng Sang Trọng, Ngọc Lục Bảo, Tím Hoàng Gia, Đại Dương Xanh, Đỏ Rực Rỡ. Nhãn “Mặc định” luôn thuộc corporate; lựa chọn hiện tại có thể là theme khác.
-- Theme được lưu riêng cho từng sự kiện, kể cả khi chưa nhập danh sách. Một theme hợp lệ đã lưu, bao gồm `lotus`, được giữ sau reload. Thiếu/sai theme ID thì dùng corporate; không ghi đè các trường khác.
-- Theme không chứa câu chữ của sự kiện. Year End Party không dùng nội dung 20/11; thay theme không thay nội dung, tiền giải, người trúng, đồng hồ hoặc âm thanh.
+Giữ 7 theme, mặc định **Sắc Màu Quyết Thắng**. Dữ liệu nhân viên, CCCD, kết quả và phiên quay luôn ở riêng trên máy. Cấu hình phiên đang quay được khóa; cập nhật theme không ngắt đồng hồ. Excel nhập/xuất và audit giữ nguyên.
 
-Các thiết bị online mặc định tải cấu hình đã công bố từ `config/published.json`. Admin hiển thị phiên bản, thời điểm công bố và nguồn đang dùng. Chọn **Dùng bản nháp trên máy** để chỉnh sửa; các thay đổi này chưa áp dụng cho thiết bị khác. Xem [hướng dẫn cấu hình chung](docs/SHARED_CONFIGURATION.md) để xuất/nhập/xem trước, dùng bản sao offline và xuất bản qua GitHub có xác thực. Phiên đang quay giữ bản chụp cấu hình đã khóa, không nhận thay đổi từ xa.
-
-Danh mục bản nháp sự kiện chỉ chứa nội dung/giao diện, lưu ở `localStorage` của trình duyệt (dùng `sessionStorage` nếu môi trường không cho truy cập localStorage). Danh sách nhân viên, lượt đang quay, kết quả và tiền giải được lưu riêng theo sự kiện trong `sessionStorage` của tab. Danh sách và phiên quay không đồng bộ qua máy chủ hoặc thiết bị; chỉ cấu hình đã công bố được dùng chung. Nếu danh mục đổi ở tab khác, ứng dụng yêu cầu tải lại thay vì ghi đè dữ liệu của tab đó.
-
-Vì nguồn gốc chỉ có v2.4 chưa có theme/preset, chủ dự án đã cho phép bổ sung lớp sự kiện và tạo bộ 7 theme mới vào ngày 18/11/2026. Không tuyên bố đã có hoặc giữ nguyên một bộ theme v2.6 cũ.
-
-## Theme realtime qua Firebase
-
-PR tích hợp Firebase thêm phần **GIAO DIỆN CHUNG CHO MỌI MÁY**: xem thử trên máy, đăng nhập Admin và bấm **Áp dụng cho tất cả thiết bị** để lưu theme. Các máy online nhận qua Firestore; chỉ theme ID được dùng chung. Cơ cấu giải, danh sách và kết quả vẫn độc lập. Xem [thiết lập, phân quyền và kiểm thử](docs/FIREBASE_SHARED_THEME.md). Cloud theme cần internet; bộ quay offline và bản sao cấu hình vẫn dùng được khi Firebase không sẵn sàng.
+Xem [hướng dẫn kiến trúc, chuyển đổi và kiểm thử](docs/SIMPLIFIED_SETTINGS.md). JSON publication và theme-only là luồng lịch sử; các mục dưới đây chỉ mô tả bản cũ nếu đề cập những nút đã bỏ. **Chưa merge/deploy tính năng mới: PR và ảnh chụp cần được duyệt trước.**
 
 ## Cấu hình
 
@@ -38,9 +26,9 @@ Tổng 44 người khác nhau, 13 lượt, 130 giây đếm ngược; thời gia
 
 ## Vận hành
 
-1. Mở website online để tải cấu hình công bố mới nhất. Để dùng offline, tải `index.html` cùng bản sao cấu hình đã công bố, mở HTML rồi nhập/xem trước và chọn dùng bản sao. Không tự dùng cache khi mất mạng. Có thể chủ động chọn bản nháp cục bộ.
+1. Open online to load the shared Firebase configuration. Admins can preview and save settings. An already-loaded page can use cached server-confirmed settings offline; shared Save requires network. First-time loading and Firebase SDK loading require network.
 2. Chọn hoặc kéo thả Excel `.xlsx`/`.xlsm` hoặc CSV, ít nhất 44 nhân viên hợp lệ. Ưu tiên cột **Mã nhân viên**, **Họ tên**; **Phòng ban** và **Số CCCD** tùy chọn. Không chạy macro/formula. `.xls` cũ cần lưu lại thành `.xlsx`.
-3. Kiểm tra báo cáo loại dòng sai/trùng. Số tiền lấy từ cấu hình công bố; muốn chỉnh cục bộ phải chuyển sang bản nháp trước phiên. Trường tiền khóa ngay khi bắt đầu lượt đầu; chỉ phiên mới cho phép sửa lại.
+3. Review invalid/duplicate import rows. Admins can edit prize names and amounts in the settings section. Fixed allocation and duration stay unchanged. Active sessions retain their frozen amounts until an explicit new session.
 4. Dùng **Chế độ sân khấu** để ẩn quản trị và yêu cầu fullscreen khi trình duyệt hỗ trợ. Có thể dùng fullscreen của trình duyệt nếu yêu cầu này bị từ chối. Màn hình 16:9 1366×768 và 1920×1080 đã kiểm tra bố cục.
 5. Bật/tắt nhạc và âm đếm giây độc lập. Âm tổng hợp có sẵn, không tải nhạc từ mạng; file nhạc riêng do người vận hành chọn cần có quyền sử dụng. Trình duyệt cần tương tác người dùng để phát âm.
 6. Nhấn **Bắt đầu quay** cho từng lượt. Kết quả giữ trên màn hình công bố. **Chuẩn bị lượt tiếp theo** chỉ chuyển sang sẵn sàng; nhấn bắt đầu lần nữa mới quay. Không tự chạy lượt kế tiếp.
@@ -66,7 +54,7 @@ Chế độ demo tạo tên/mã giả lập và CCCD trống. Chỉ dùng demo/f
 
 ```sh
 python3 scripts/preflight.py
-node --test tests/test-v24.cjs
+npm test
 python3 -m unittest discover -s tests -p 'test_publication.py'
 python3 -m http.server 8765 --bind 127.0.0.1
 ```

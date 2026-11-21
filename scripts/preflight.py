@@ -14,11 +14,11 @@ ALLOWED = {
     '.firebaserc', 'firebase.json', 'firestore.rules', 'package.json', 'package-lock.json',
     'cloud-theme-config.js', 'cloud-theme-sync.js', 'cloud-theme.css',
     '.github/workflows/shared-theme-check.yml', 'tests/shared-theme-contract.cjs',
-    'tests/firestore-rules.cjs', 'tests/cloud-theme-controller.cjs', 'docs/FIREBASE_SHARED_THEME.md',
+    'tests/firestore-rules.cjs', 'tests/settings-firestore.cjs', 'tests/settings-model.cjs', 'tests/cloud-theme-controller.cjs', 'docs/FIREBASE_SHARED_THEME.md',
     'scripts/preflight.py', 'scripts/publish_config.py', 'scripts/validate_config.cjs',
-    'tests/test-v24.cjs', 'tests/test_publication.py', '.github/workflows/publish-event-config.yml',
+    'tests/test-v24.cjs', 'tests/test_publication.py',
     'config/published.json', 'config/versions/v000001.json',
-    'docs/SHARED_CONFIGURATION.md', 'docs/QA_SHARED_CONFIGURATION.md',
+    'docs/SIMPLIFIED_SETTINGS.md', 'docs/SHARED_CONFIGURATION.md', 'docs/QA_SHARED_CONFIGURATION.md',
     'docs/ARCHITECTURE.md', 'docs/QA_V2_4.md', 'docs/QA_V2_6.md', 'docs/MASTER_PROMPT_V2_6.md',
 }
 errors = []
@@ -45,7 +45,7 @@ checks = {
     'corporate default and branding': "DEFAULT_THEME_ID='quyet-thang-corporate'" in content and all(c in content for c in ['#2E7BC3','#F2363F','#0D1B3D']),
     'fixed 10-second engine': bool(re.search(r'const DRAW_MS=10_000', content)),
     'embedded original logo': 'data:image/png;base64,' in content,
-    'inline draw/event modules and preserved application/library scripts': len(scripts) == 6,
+    'inline draw/event modules and preserved application/library scripts': len(scripts) == 7,
     'no old draw duration or obsolete headings': not re.search(r'15_?000|5_000|LỄ TRI ÂN', '\n'.join(scripts[1:]).upper()),
     'no direct network APIs or private uploads': not re.search(r'\b(fetch|XMLHttpRequest|WebSocket|sendBeacon)\s*\(', '\n'.join(scripts[1:])),
     'anonymous bounded config GET only': all(part in content for part in ["cache:'no-store',credentials:'omit',redirect:'error',signal", "new URL('./config/published.json'", "SharedConfiguration.fetchPublished(fetcher,url.href"]),
@@ -103,4 +103,4 @@ except (OSError, ValueError, KeyError) as error:
 if errors:
     print('PRE-FLIGHT FAILED:\n' + '\n'.join(' - ' + error for error in errors))
     sys.exit(1)
-print('PRE-FLIGHT PASSED: exact public-source allowlist, privacy scan, inline assets, v2.6 themes, approved draw configuration shared version history and 6 JavaScript syntax checks')
+print('PRE-FLIGHT PASSED: exact public-source allowlist, privacy scan, inline assets, v2.6 themes, approved draw configuration shared version history and 7 JavaScript syntax checks')
