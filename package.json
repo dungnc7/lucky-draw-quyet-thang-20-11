@@ -1,0 +1,17 @@
+{
+  "name": "lucky-draw-quyet-thang-validation",
+  "version": "2.6.0",
+  "private": true,
+  "description": "Development validation only; the Pages app does not require npm at runtime.",
+  "scripts": {
+    "test": "node --test tests/test-v24.cjs && node tests/shared-theme-contract.cjs && node --test tests/cloud-theme-controller.cjs",
+    "test:rules": "node --test tests/firestore-rules.cjs"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "6.0.0",
+    "firebase": "13.4.0"
+  },
+  "engines": {
+    "node": ">=24.12.0"
+  }
+}

@@ -10,3 +10,5 @@
 .cloud-theme-controls summary{cursor:pointer;color:#d7e9ff;font-size:11px}
 .cloud-theme-controls form{display:grid;gap:7px;margin:9px 0}
 .cloud-theme-controls .cloud-subtle{font-size:10px;color:#b5c2d3;line-height:1.5;margin:0}
+
+.cloud-theme-controls [hidden]{display:none!important}

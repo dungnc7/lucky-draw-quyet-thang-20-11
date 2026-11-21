@@ -84,7 +84,7 @@
       }
       live=true;
       const data=snapshot.exists()?snapshot.data():null;
-      if(data&&(data.schemaVersion!==1||!valid(data.themeId))){
+      if(data&&(Object.keys(data).length!==3||!['schemaVersion','themeId','updatedAt'].every(k=>Object.hasOwn(data,k))||data.schemaVersion!==1||!valid(data.themeId)||typeof data.updatedAt?.toDate!=='function'||!Number.isFinite(data.updatedAt.toDate().getTime()))){
         live=false;tell('Dữ liệu theme chung không hợp lệ.');paint();return;
       }
       hasPublished=!!data;
@@ -92,7 +92,7 @@
       select.value=published;
       showTime(data?.updatedAt?.toDate?.()||null);
       display(published);
-      tell(data?'Đã đồng bộ tới mọi thiết bị: '+catalog.find(t=>t.id===published).name:
+      tell(data?'Đã nhận giao diện chung: '+catalog.find(t=>t.id===published).name:
                 'Chưa có bản lưu chung. Mặc định: Sắc Màu Quyết Thắng.');
       paint();
     },err=>{live=false;tell('Không tải được theme chung: '+(err.code||err.message));paint()});

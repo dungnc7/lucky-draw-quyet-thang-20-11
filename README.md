@@ -20,6 +20,10 @@ Danh mục bản nháp sự kiện chỉ chứa nội dung/giao diện, lưu ở
 
 Vì nguồn gốc chỉ có v2.4 chưa có theme/preset, chủ dự án đã cho phép bổ sung lớp sự kiện và tạo bộ 7 theme mới vào ngày 18/11/2026. Không tuyên bố đã có hoặc giữ nguyên một bộ theme v2.6 cũ.
 
+## Theme realtime qua Firebase
+
+PR tích hợp Firebase thêm phần **GIAO DIỆN CHUNG CHO MỌI MÁY**: xem thử trên máy, đăng nhập Admin và bấm **Áp dụng cho tất cả thiết bị** để lưu theme. Các máy online nhận qua Firestore; chỉ theme ID được dùng chung. Cơ cấu giải, danh sách và kết quả vẫn độc lập. Xem [thiết lập, phân quyền và kiểm thử](docs/FIREBASE_SHARED_THEME.md). Cloud theme cần internet; bộ quay offline và bản sao cấu hình vẫn dùng được khi Firebase không sẵn sàng.
+
 ## Cấu hình
 
 | Hạng giải | Tổng người | Người/lượt | Số lượt | Thời gian/lượt |
