@@ -1,13 +1,20 @@
 rules_version = '2';
-// Public document: sharedEvent/live, schema 2, revision +1, server updatedAt,
-// settings {event (public text/brand/date/theme/logo/background), fixed draw, audio}.
-// admins/<uid> contains only private owner-provisioned authorization metadata.
+// Protected document: sharedEvent/live, schema 3, revision +1, server updatedAt,
+// settings {event (public text/brand/date/theme/logo/background), audio,
+// draw {rulesId, prizeIds, totalSlots, generation}}. generation points to immutable
+// prizeVersions/<generation>/blocks/{0..5}: {schemaVersion,revision,createdAt,prizeIds,prizes,slots}
+// and metadata/event: {revision,createdAt,event,audio}. Only the root publishes staging.
+// admins/<uid> and operators/<uid>: {enabled: bool, validAfter?: non-negative epoch seconds}.
+// Roles are privately provisioned; validAfter invalidates sessions with auth_time <= cutoff.
 // sharedTheme/live remains readable for migration; writes stop atomically at cutover.
 service cloud.firestore {
  match /databases/{database}/documents {
   function signedIn(){return request.auth != null;}
   function owns(uid){return signedIn() && request.auth.uid == uid;}
-  function isAdmin(){return signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)) && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.enabled == true;}
+  function validRole(d){let cutoff=d.get('validAfter',0);return d.keys().hasOnly(['enabled','validAfter']) && d.enabled==true && cutoff is int && cutoff>=0 && request.auth.token.auth_time>cutoff;}
+  function isAdmin(){return signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)) && validRole(get(/databases/$(database)/documents/admins/$(request.auth.uid)).data);}
+  function isOperator(){return signedIn() && exists(/databases/$(database)/documents/operators/$(request.auth.uid)) && validRole(get(/databases/$(database)/documents/operators/$(request.auth.uid)).data);}
+  function member(){return isAdmin() || isOperator();}
   // Required fields are accessed by each validator: a missing field fails closed.
   function exact(m,fields){return m.keys().hasOnly(fields);}
   function publicText(s,pattern){return s is string && s.matches(pattern);}
@@ -21,25 +28,50 @@ service cloud.firestore {
   function validLogo(l){let v=l;return (exact(v,['kind','id']) && v.kind=='builtin' && v.id=='quyet-thang-original') || (exact(v,['kind','url']) && v.kind=='url' && publicText(v.url,'(?s).{1,600}') && v.url.matches('https://[a-zA-Z0-9-]+(\\.[a-zA-Z0-9-]+)+/[^?#\\s]*'));}
   function validBackground(b){let v=b;return (exact(v,['kind']) && v.kind=='theme') || (exact(v,['kind','color']) && v.kind=='solid' && v.color is string && v.color.matches('#[0-9a-fA-F]{6}'));}
   function validAudio(a){let v=a;return exact(v,['countdownEnabled','musicEnabled','music','celebrationEnabled']) && v.countdownEnabled is bool && v.musicEnabled is bool && v.celebrationEnabled is bool && exact(v.music,['kind','id']) && v.music.kind=='builtin' && v.music.id=='synthesized-suspense';}
-  function validMetadata(d){return d.keys().hasOnly(['schemaVersion','revision','updatedAt','settings']) && d.schemaVersion is int && d.schemaVersion==2 && d.revision is int && d.revision>0 && d.revision<=2147483647 && d.updatedAt is timestamp && d.updatedAt==request.time && d.settings.keys().hasOnly(['event','draw','audio']);}
+  function validMetadata(d){return d.keys().hasOnly(['schemaVersion','revision','updatedAt','settings']) && d.schemaVersion is int && d.schemaVersion==3 && d.revision is int && d.revision>0 && d.revision<=2147483647 && d.updatedAt is timestamp && d.updatedAt==request.time && d.settings.keys().hasOnly(['event','draw','audio']);}
   function validSettingsEvent(e){let c=e.content;let a=e.appearance;return e.keys().hasOnly(['id','presetId','content','appearance','details']) && e.id is string && e.id.matches('[a-zA-Z0-9-]{1,80}') && e.presetId in ['teachers-day','year-end','custom'] && validContent(c) && e.details.keys().hasOnly(['organization','date']) && publicText(e.details.organization,'(?s).{1,140}') && e.details.date is string && validDate(e.details.date) && a.keys().hasOnly(['themeId','logo','background']) && theme(a.themeId) && validLogo(a.logo) && validBackground(a.background);}
-  function prizeValue(p,fields){return p.keys().hasOnly(fields) && p.name is string && p.name.size()>0 && p.name.size()<=80 && p.amount is int && p.amount>=0 && p.amount<=100000000000;}
-  function validSettingsDraw(d){let p=d.prizes;let fields=['key','name','count','batchSize','amount'];return d.keys().hasOnly(['rulesId','durationMs','prizes']) && d.rulesId=='v2.4-consolation-5x6' && d.durationMs==10000 && p is list && p.size()==5 &&
-    [p[0].key,p[0].count,p[0].batchSize,p[1].key,p[1].count,p[1].batchSize,p[2].key,p[2].count,p[2].batchSize,p[3].key,p[3].count,p[3].batchSize,p[4].key,p[4].count,p[4].batchSize]==['encouragement',30,6,'fourth',8,4,'third',3,1,'second',2,1,'first',1,1] && prizeValue(p[0],fields) && prizeValue(p[1],fields) && prizeValue(p[2],fields) && prizeValue(p[3],fields) && prizeValue(p[4],fields);}
-  function validConfiguration(d){let s=d.settings;return validMetadata(d) && validSettingsEvent(s.event) && validSettingsDraw(s.draw) && validAudio(s.audio) && safePublicText(s);}
-  function safePublicText(s){let e=s.event;let p=s.draw.prizes;let text=e.content.values().concat([e.id,e.details.organization,p[0].name,p[1].name,p[2].name,p[3].name,p[4].name,e.appearance.logo.get('url','')]).join(' ');return !text.matches('(?s).*([0-9]{12}|github_pat_|ghp_|gho_|-----BEGIN).*');}
+  function validPrize(p,id){return p.keys().hasOnly(['key','name','count','batchSize','amount','durationMs']) && p.key==id && p.key is string && p.key.matches('[a-z][a-z0-9_-]{0,39}') && publicText(p.name,'(?s).{1,80}') && !p.name.matches('(?s).*([0-9]{12}|github_pat_|ghp_|-----BEGIN).*') && p.count is int && p.count>=1 && p.count<=5000 && p.batchSize is int && p.batchSize>=1 && p.batchSize<=100 && p.amount is int && p.amount>=0 && p.amount<=100000000000 && p.durationMs is int && p.durationMs>=1000 && p.durationMs<=300000 && p.durationMs%1000==0;}
+  // Each block is validated in its own write budget. The root atomically references current blocks.
+  function checkedSlots(d,i,revision){
+   let b=get(/databases/$(database)/documents/sharedEvent/live/prizeVersions/$(d.generation)/blocks/$(string(i))).data;
+   return b.revision==revision && b.prizeIds==d.prizeIds[i*4:(d.prizeIds.size()<(i+1)*4?d.prizeIds.size():(i+1)*4)] ? b.slots : -1000001;
+  }
+  function blockSlots(d,i){return d.prizeIds.size()>i*4?checkedSlots(d,i,request.resource.data.revision):0;}
+  function validSettingsDraw(d){let n=d.prizeIds.size();return d.keys().hasOnly(['rulesId','prizeIds','totalSlots','generation']) && d.rulesId=='dynamic-v1' && d.generation is string && d.generation.matches('g-[a-z0-9-]{8,60}') && d.prizeIds is list && n>=1 && n<=24 && d.prizeIds.toSet().size()==n && d.totalSlots is int && d.totalSlots>=1 && d.totalSlots<=100000 && d.totalSlots==blockSlots(d,0)+blockSlots(d,1)+blockSlots(d,2)+blockSlots(d,3)+blockSlots(d,4)+blockSlots(d,5);}
+  function validPrizeBlock(b){let p=b.prizes;let n=p.size();
+   let current=exists(/databases/$(database)/documents/sharedEvent/live)?get(/databases/$(database)/documents/sharedEvent/live).data.revision:0;
+   return b.keys().hasOnly(['schemaVersion','revision','prizeIds','prizes','slots','createdAt']) && b.schemaVersion==1 && b.revision==current+1 && b.createdAt==request.time && p is list && n>=1 && n<=4 && b.prizeIds is list && b.prizeIds.size()==n && b.prizeIds.toSet().size()==n &&
+    validPrize(p[0],b.prizeIds[0]) &&
+    (n<2 || validPrize(p[1],b.prizeIds[1])) &&
+    (n<3 || validPrize(p[2],b.prizeIds[2])) &&
+    (n<4 || validPrize(p[3],b.prizeIds[3])) && b.slots==(n>0?p[0].count:0)+(n>1?p[1].count:0)+(n>2?p[2].count:0)+(n>3?p[3].count:0);}
+  function validHeaderReference(s,revision){let h=get(/databases/$(database)/documents/sharedEvent/live/prizeVersions/$(s.draw.generation)/metadata/event).data;return h.revision==revision && h.event==s.event && h.audio==s.audio;}
+  match /sharedEvent/live/prizeVersions/{generation}/metadata/event {
+   allow get: if isAdmin();
+   allow list,update,delete: if false;
+   allow create: if isAdmin() && generation.matches('g-[a-z0-9-]{8,60}') && request.resource.data.keys().hasOnly(['revision','createdAt','event','audio']) && request.resource.data.revision==(exists(/databases/$(database)/documents/sharedEvent/live)?get(/databases/$(database)/documents/sharedEvent/live).data.revision+1:1) && request.resource.data.createdAt==request.time && validSettingsEvent(request.resource.data.event) && validAudio(request.resource.data.audio) && safePublicText(request.resource.data);
+  }
+  function validConfiguration(d){let s=d.settings;return validMetadata(d) && validHeaderReference(s,d.revision) && validSettingsDraw(s.draw);}
+  function safePublicText(s){let e=s.event;let text=e.content.values().concat([e.id,e.details.organization,e.appearance.logo.get('url','')]).join(' ');return !text.matches('(?s).*([0-9]{12}|github_pat_|ghp_|gho_|-----BEGIN).*');}
   match /sharedEvent/live {
-   allow get: if true;
+   allow get: if member();
    allow list,delete: if false;
    allow create,update: if isAdmin()
     && request.resource.data.revision==(resource==null?1:resource.data.revision+1)
     && validConfiguration(request.resource.data);
   }
+  // Staging is not a second authority. Only a root pointer commit publishes immutable blocks.
+  match /sharedEvent/live/prizeVersions/{generation}/blocks/{block}{
+   allow get: if isAdmin() || (member() && generation==get(/databases/$(database)/documents/sharedEvent/live).data.settings.draw.generation && block.matches('[0-5]') && int(block)*4<get(/databases/$(database)/documents/sharedEvent/live).data.settings.draw.prizeIds.size());
+   allow list,update,delete: if false;
+   allow create: if isAdmin() && generation.matches('g-[a-z0-9-]{8,60}') && block.matches('[0-5]') && validPrizeBlock(request.resource.data);
+  }
   match /sharedTheme/live {
-   allow get: if true;
+   allow get: if member();
    allow list,delete: if false;
    allow create,update: if isAdmin() && !exists(/databases/$(database)/documents/sharedEvent/live) && exact(request.resource.data,['schemaVersion','themeId','updatedAt']) && request.resource.data.schemaVersion==1 && theme(request.resource.data.themeId) && request.resource.data.updatedAt==request.time;
   }
+  match /operators/{uid}{allow get: if owns(uid);allow list,create,update,delete: if false;}
   match /admins/{uid}{allow get: if owns(uid);allow list,create,update,delete: if false;}
   match /{other=**}{allow read,write: if false;}
  }

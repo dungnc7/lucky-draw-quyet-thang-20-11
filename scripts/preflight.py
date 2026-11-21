@@ -12,13 +12,13 @@ ALLOWED = {
     '.gitignore', '.nojekyll', 'AGENTS.md', 'CODEX_DEPLOY_TASK.md',
     'LICENSE-JSZIP.txt', 'PUBLISH.md', 'README.md', 'index.html',
     '.firebaserc', 'firebase.json', 'firestore.rules', 'package.json', 'package-lock.json',
-    'cloud-theme-config.js', 'cloud-theme-sync.js', 'cloud-theme.css',
+    'cloud-theme-config.js', 'cloud-theme-sync.js', 'cloud-theme.css', 'auth-guard.js', 'auth.css',
     '.github/workflows/shared-theme-check.yml', 'tests/shared-theme-contract.cjs',
-    'tests/firestore-rules.cjs', 'tests/settings-firestore.cjs', 'tests/settings-model.cjs', 'tests/cloud-theme-controller.cjs', 'docs/FIREBASE_SHARED_THEME.md',
+    'tests/firestore-rules.cjs', 'tests/settings-firestore.cjs', 'tests/settings-model.cjs', 'tests/auth-guard.cjs', 'tests/auth-emulator.cjs', 'tests/auth-ui.cjs', 'tests/cloud-theme-controller.cjs', 'docs/FIREBASE_SHARED_THEME.md',
     'scripts/preflight.py', 'scripts/publish_config.py', 'scripts/validate_config.cjs',
-    'tests/test-v24.cjs', 'tests/test_publication.py',
+    'tests/dynamic-prizes.cjs', 'docs/DYNAMIC_PRIZES.md', 'tests/test-v24.cjs', 'tests/test_publication.py',
     'config/published.json', 'config/versions/v000001.json',
-    'docs/SIMPLIFIED_SETTINGS.md', 'docs/SHARED_CONFIGURATION.md', 'docs/QA_SHARED_CONFIGURATION.md',
+    'docs/AUTH_ACCESS.md', 'docs/QA_AUTH.md', 'docs/SIMPLIFIED_SETTINGS.md', 'docs/SHARED_CONFIGURATION.md', 'docs/QA_SHARED_CONFIGURATION.md',
     'docs/ARCHITECTURE.md', 'docs/QA_V2_4.md', 'docs/QA_V2_6.md', 'docs/MASTER_PROMPT_V2_6.md',
 }
 errors = []
@@ -40,10 +40,10 @@ scripts = [s for s in re.findall(r'<script[^>]*>(.*?)</script>', content, re.S) 
 checks = {
     'v2.6 title': '<title>Lucky Draw Event Platform v2.6' in content,
     'Vietnamese Teachers Day heading': 'CHƯƠNG TRÌNH QUAY THƯỞNG NGÀY NHÀ GIÁO VIỆT NAM 20/11' in content,
-    'final consolation configuration': "key:'encouragement',count:30,batchSize:6" in content and "configId:CONFIG_ID" in content,
+    'final consolation configuration': "['encouragement','Giải khuyến khích',30,6,200000]" in content and "configId:CONFIG_ID" in content,
     'no obsolete consolation progress': 'LƯỢT 1/6' not in content and ' / 14`' not in content,
     'corporate default and branding': "DEFAULT_THEME_ID='quyet-thang-corporate'" in content and all(c in content for c in ['#2E7BC3','#F2363F','#0D1B3D']),
-    'fixed 10-second engine': bool(re.search(r'const DRAW_MS=10_000', content)),
+    '10-second preset default': bool(re.search(r'const DRAW_MS=10_000', content)),
     'embedded original logo': 'data:image/png;base64,' in content,
     'inline draw/event modules and preserved application/library scripts': len(scripts) == 7,
     'no old draw duration or obsolete headings': not re.search(r'15_?000|5_000|LỄ TRI ÂN', '\n'.join(scripts[1:]).upper()),
@@ -57,9 +57,9 @@ class Resources(HTMLParser):
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
         for key in ('src', 'poster'):
-            if attrs.get(key) and not attrs[key].startswith('data:') and attrs[key] not in {'./cloud-theme-config.js', './cloud-theme-sync.js'}:
+            if attrs.get(key) and not attrs[key].startswith('data:') and attrs[key] not in {'./cloud-theme-config.js', './cloud-theme-sync.js', './auth-guard.js'}:
                 errors.append('Non-embedded resource: ' + attrs[key])
-        if tag == 'link' and attrs.get('rel') in {'stylesheet', 'preload'} and attrs.get('href') != './cloud-theme.css':
+        if tag == 'link' and attrs.get('rel') in {'stylesheet', 'preload'} and attrs.get('href') not in {'./cloud-theme.css','./auth.css'}:
             errors.append('External stylesheet/preload not permitted')
 Resources().feed(content)
 # Scan human-readable application source, excluding embedded media and the unchanged JSZip library.

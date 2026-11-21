@@ -4,8 +4,8 @@
   "private": true,
   "description": "Development validation only; the Pages app does not require npm at runtime.",
   "scripts": {
-    "test": "node --test tests/test-v24.cjs tests/settings-model.cjs tests/cloud-theme-controller.cjs && node tests/shared-theme-contract.cjs",
-    "test:rules": "node --test tests/firestore-rules.cjs tests/settings-firestore.cjs"
+    "test": "node --test tests/dynamic-prizes.cjs tests/test-v24.cjs tests/settings-model.cjs tests/auth-guard.cjs tests/auth-ui.cjs tests/cloud-theme-controller.cjs && node tests/shared-theme-contract.cjs",
+    "test:rules": "node --test tests/firestore-rules.cjs tests/settings-firestore.cjs tests/auth-emulator.cjs"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "6.0.0",

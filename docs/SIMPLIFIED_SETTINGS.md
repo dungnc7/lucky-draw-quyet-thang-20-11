@@ -1,3 +1,7 @@
+> Dynamic upgrade: [DYNAMIC_PRIZES.md](DYNAMIC_PRIZES.md) supersedes the fixed prize/schema-2 portions below. Admin edits quantities, batch sizes, durations and order before starting a session. schema 3 publishes immutable staged prize blocks through one CAS root pointer. Authentication PR #3 still requires login for reads.
+
+> Authentication upgrade candidate: [AUTH_ACCESS.md](AUTH_ACCESS.md). Mandatory server-verified login and protected Firestore reads supersede the former public-viewer/offline-cache behavior below. Release requires owner approval and the coordinated maintenance sequence. Production is unchanged by this branch.
+
 # Cài đặt chương trình — candidate for review
 
 This branch is a review candidate. No production rules deployment, shared-document creation, Pages deployment or merge is part of this change. Emulator verification is not evidence that production is live.
