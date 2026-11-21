@@ -1,0 +1,31 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.enabled == true;
+    }
+    match /sharedTheme/live {
+      // Exactly one public theme ID is published; do not store private data here.
+      allow get: if true;
+      allow list: if false;
+      allow create, update: if isAdmin()
+        && request.resource.data.keys().hasOnly(['schemaVersion', 'themeId', 'updatedAt'])
+        && request.resource.data.keys().hasAll(['schemaVersion', 'themeId', 'updatedAt'])
+        && request.resource.data.schemaVersion == 1
+        && request.resource.data.themeId in [
+          'quyet-thang-corporate', 'lotus', 'midnight-gold',
+          'emerald', 'royal-purple', 'ocean', 'crimson'
+        ]
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+    }
+    match /admins/{uid} {
+      allow get: if request.auth != null && request.auth.uid == uid;
+      // Membership granted only through Firebase Console or Admin SDK.
+      allow list, create, update, delete: if false;
+    }
+    match /{other=**} { allow read, write: if false; }
+  }
+}

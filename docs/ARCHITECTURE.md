@@ -56,3 +56,7 @@ A single CSS token layer controls all four screens; content fields render the ti
 ## Shared publication layer
 
 Public settings are served as versioned JSON alongside the HTML. The controller separates published, local draft and explicitly imported offline sources. Anonymous GET is the sole network path. Schema validation and approved rule checks are shared verbatim by browser, CLI and CI; a 6-second abort prevents indefinite startup. Active configuration snapshots are validated and frozen before the first draw persistence, then restored with the original pending selection. Remote updates are deferred until session reset. Public metadata cache provides rollback detection only. Local catalogs remain separate from public settings. See [shared configuration contract](SHARED_CONFIGURATION.md) for failure handling, authenticated deployment and privacy boundaries.
+
+## Firebase visual-only adapter
+
+`cloud-theme-config.js`, `cloud-theme-sync.js` and `cloud-theme.css` are optional static assets. The adapter imports the official modular Firebase Web SDK and subscribes to exactly `sharedTheme/live`. It emits one theme-override event; the existing renderer reads a valid override before the event theme. No draw engine state is exposed to the adapter. The adapter writes only the three-field public schema after Auth and Admin role checks; deployed Firestore rules remain authoritative. Strict client validation prevents invalid remote fields/timestamps from changing presentation. See FIREBASE_SHARED_THEME.md for production/emulator evidence and credential boundaries.

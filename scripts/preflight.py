@@ -11,6 +11,10 @@ ROOT = Path(__file__).resolve().parents[1]
 ALLOWED = {
     '.gitignore', '.nojekyll', 'AGENTS.md', 'CODEX_DEPLOY_TASK.md',
     'LICENSE-JSZIP.txt', 'PUBLISH.md', 'README.md', 'index.html',
+    '.firebaserc', 'firebase.json', 'firestore.rules', 'package.json', 'package-lock.json',
+    'cloud-theme-config.js', 'cloud-theme-sync.js', 'cloud-theme.css',
+    '.github/workflows/shared-theme-check.yml', 'tests/shared-theme-contract.cjs',
+    'tests/firestore-rules.cjs', 'tests/cloud-theme-controller.cjs', 'docs/FIREBASE_SHARED_THEME.md',
     'scripts/preflight.py', 'scripts/publish_config.py', 'scripts/validate_config.cjs',
     'tests/test-v24.cjs', 'tests/test_publication.py', '.github/workflows/publish-event-config.yml',
     'config/published.json', 'config/versions/v000001.json',
@@ -24,7 +28,7 @@ for path in version_paths:
         ALLOWED.add(path.relative_to(ROOT).as_posix())
 for path in ROOT.rglob('*'):
     rel = path.relative_to(ROOT)
-    if '.git' in rel.parts or '__pycache__' in rel.parts:
+    if '.git' in rel.parts or '__pycache__' in rel.parts or 'node_modules' in rel.parts or '.firebase' in rel.parts:
         continue
     if path.is_file() and rel.as_posix() not in ALLOWED:
         errors.append('Unexpected public file: ' + rel.as_posix())
@@ -32,7 +36,7 @@ for name in ALLOWED:
     if not (ROOT / name).is_file():
         errors.append('Missing release file: ' + name)
 content = (ROOT / 'index.html').read_text(encoding='utf-8')
-scripts = re.findall(r'<script[^>]*>(.*?)</script>', content, re.S)
+scripts = [s for s in re.findall(r'<script[^>]*>(.*?)</script>', content, re.S) if s.strip()]
 checks = {
     'v2.6 title': '<title>Lucky Draw Event Platform v2.6' in content,
     'Vietnamese Teachers Day heading': 'CHƯƠNG TRÌNH QUAY THƯỞNG NGÀY NHÀ GIÁO VIỆT NAM 20/11' in content,
@@ -53,9 +57,9 @@ class Resources(HTMLParser):
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
         for key in ('src', 'poster'):
-            if attrs.get(key) and not attrs[key].startswith('data:'):
+            if attrs.get(key) and not attrs[key].startswith('data:') and attrs[key] not in {'./cloud-theme-config.js', './cloud-theme-sync.js'}:
                 errors.append('Non-embedded resource: ' + attrs[key])
-        if tag == 'link' and attrs.get('rel') in {'stylesheet', 'preload'}:
+        if tag == 'link' and attrs.get('rel') in {'stylesheet', 'preload'} and attrs.get('href') != './cloud-theme.css':
             errors.append('External stylesheet/preload not permitted')
 Resources().feed(content)
 # Scan human-readable application source, excluding embedded media and the unchanged JSZip library.
