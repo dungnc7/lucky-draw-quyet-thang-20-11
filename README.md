@@ -4,6 +4,14 @@ Nền tảng quay thưởng cho Ngày Nhà giáo Việt Nam 20/11, Year End Part
 
 Website: [dungnc7.github.io/lucky-draw-quyet-thang-20-11](https://dungnc7.github.io/lucky-draw-quyet-thang-20-11/)
 
+## Cơ cấu giải động và Excel trao thưởng — PR chờ duyệt
+
+Admin có thể thêm/xóa/sắp xếp hạng giải, sửa số suất, số người mỗi lượt, thời gian, tên và tiền mỗi giải trong **Cài đặt chương trình**. Bản 20/11 mặc định vẫn là 44 người, 13 lượt, 10 giây/lượt; đây là mẫu có thể sửa. Lượt cuối tự lấy số người còn lại; từng lượt vẫn cần chuẩn bị và bắt đầu bằng tay. Giao diện hiển thị số người và tiến độ, không hiển thị tổng tiền.
+
+**Xuất danh sách trao thưởng** trong Kết quả tạo hai sheet có trạng thái trao thưởng, chỗ ký nhận, lọc và thiết lập in A4 ngang. Chỉ xuất người trúng đã xác nhận, loại kết quả demo và CCCD. Giữ nút xuất Excel chi tiết và nhật ký; file không tải lên Firebase/GitHub.
+
+Xem [thiết kế, giới hạn, migration và kiểm thử](docs/DYNAMIC_PRIZES.md). Nhánh này dựa trên PR Authentication #3 đang mở; **chưa merge hoặc deploy**. Quyền đọc vẫn yêu cầu tài khoản Admin/Operator đã được cấp quyền.
+
 ## Đăng nhập và phân quyền (PR chờ duyệt)
 
 Login bắt buộc trước khi mở Dashboard. Firebase khôi phục phiên, xác minh quyền Admin/Nhân viên vận hành từ máy chủ; tài khoản chưa được cấp quyền bị chặn. Có Ghi nhớ đăng nhập, hiện/ẩn mật khẩu, Quên mật khẩu và menu Đăng xuất. Admin được lưu cài đặt chung; Operator chỉ xem cấu hình và vận hành quay/import/export. Không có đăng ký công khai hoặc tự cấp quyền.
@@ -14,7 +22,7 @@ Xem [kiến trúc/quyền và thứ tự release](docs/AUTH_ACCESS.md), [bằng 
 
 ## Cài đặt chương trình
 
-Thông tin · Giao diện · Giải thưởng · Âm thanh trong một bảng Admin. Xem trước bản sửa, rồi **Lưu & áp dụng cho tất cả thiết bị** bằng tài khoản Admin. Trong bản Auth candidate, chỉ tài khoản được cấp quyền mới xem được cấu hình. Firebase `sharedEvent/live` đồng bộ toàn bộ cấu hình công khai; revision transaction ngăn ghi đè bản mới. Chỉ sửa tên và tiền giải: giữ 44 người, 13 lượt, 10 giây/lượt.
+Thông tin · Giao diện · Giải thưởng · Âm thanh trong một bảng Admin. Xem trước bản sửa, rồi **Lưu & áp dụng cho tất cả thiết bị** bằng tài khoản Admin. Trong bản Auth candidate, chỉ tài khoản được cấp quyền mới xem được cấu hình. Firebase `sharedEvent/live` đồng bộ toàn bộ cấu hình công khai; revision transaction ngăn ghi đè bản mới. Cơ cấu giải là cấu hình động; phiên bắt đầu sẽ khóa toàn bộ cơ cấu, tên và tiền giải thực tế trong snapshot riêng.
 
 Giữ 7 theme, mặc định **Sắc Màu Quyết Thắng**. Dữ liệu nhân viên, CCCD, kết quả và phiên quay luôn ở riêng trên máy. Cấu hình phiên đang quay được khóa; cập nhật theme không ngắt đồng hồ. Excel nhập/xuất và audit giữ nguyên.
 

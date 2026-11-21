@@ -1,15 +1,15 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict');
-const {EventSettings:M}=require('../scripts/validate_config.cjs');
+const {EventSettings:M,BatchEngine:E}=require('../scripts/validate_config.cjs');
 const seed=()=>M.migrate(require('../config/published.json'));
 const raw=(revision=1,settings=seed())=>({schemaVersion:2,revision,updatedAt:{toDate:()=>new Date('2026-11-21T00:00:00Z')},settings});
 const clone=x=>JSON.parse(JSON.stringify(x));
 test('migration preserves public event, seven-theme selection and approved 44/13/10 rules',()=>{
  const old=require('../config/published.json'),s=M.migrate(old,{schemaVersion:1,themeId:'lotus',updatedAt:{}});
- assert.equal(s.event.appearance.themeId,'lotus');assert.deepEqual(clone(s.event.content),old.event.content);assert.deepEqual(clone(s.draw),old.draw);assert.equal(s.audio.celebrationEnabled,true);assert.equal(seed().event.appearance.themeId,'quyet-thang-corporate');
+ assert.equal(s.event.appearance.themeId,'lotus');assert.deepEqual(clone(s.event.content),old.event.content);assert.deepEqual(clone(s.draw),clone(E.migrateDraw(old.draw)));assert.equal(s.audio.celebrationEnabled,true);assert.equal(seed().event.appearance.themeId,'quyet-thang-corporate');
 });
 test('public schema refuses private/unknown fields and unsupported structure or duration',()=>{
- for(const mutate of [s=>s.people=[],s=>s.event.cccd='SYNTHETIC',s=>s.draw.durationMs=5000,s=>s.draw.prizes[0].batchSize=5,s=>s.audio.token='secret',s=>s.event.details.date='2026-02-30',s=>s.event.appearance.logo={kind:'url',url:'javascript:alert(1)'}]){const s=clone(seed());mutate(s);assert.throws(()=>M.validate(s));}
+ for(const mutate of [s=>s.people=[],s=>s.event.cccd='SYNTHETIC',s=>s.draw.durationMs=5000,s=>s.draw.prizes[0].batchSize=0,s=>s.audio.token='secret',s=>s.event.details.date='2026-02-30',s=>s.event.appearance.logo={kind:'url',url:'javascript:alert(1)'}]){const s=clone(seed());mutate(s);assert.throws(()=>M.validate(s));}
 });
 test('names, amounts, public information, theme, solid background and audio survive validation/reload',()=>{
  const s=clone(seed());s.draw.prizes[0].name='Giải tri ân';s.draw.prizes[0].amount=250000;s.event.details.organization='Đơn vị thử nghiệm';s.event.appearance.background={kind:'solid',color:'#123456'};s.audio.musicEnabled=true;s.audio.celebrationEnabled=false;
