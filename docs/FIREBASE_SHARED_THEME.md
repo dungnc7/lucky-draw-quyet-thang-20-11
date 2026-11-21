@@ -55,13 +55,14 @@ npx -y firebase-tools@latest deploy --only firestore:rules,auth --project lucky-
 
 The configured database is Standard to match this repository's document SDK and its verified free-tier deployment. Do not create another database/edition, link billing, add Storage/Functions or change existing data as a side effect. Stop for owner authorization if a billing upgrade is required. With the current Email/Password flow no OAuth popup or redirect is used; if a future provider is added, separately configure the exact authorized domains and review its permissions.
 
-## Evidence and remaining gate
+## Verification evidence and release gates
 
 - 60 original regression tests plus one cloud-override active-session test pass (including 13 manual batches and 44 unique winners).
 - 8 real-controller VM tests pass for preview/publish, default/all themes, authorization gating, offline failure and invalid snapshots.
 - Static integration contract and Python publication tests pass.
 - 12 Firestore Emulator tests pass: public exact read, no list/private read, unauthenticated/non-admin/disabled-role write denial, all seven Admin writes, self-promotion/batch escalation denied, schema/private-field/type/timestamp rejection, missing fields, deletion/path denial, revoked Admin denial, and two independent public SDK listeners receiving an Admin update.
 - Production client probe: unauthenticated read succeeded; unauthenticated write, authenticated non-admin write and self-promotion returned `permission-denied`. The temporary synthetic non-admin account was deleted after testing; no password was logged or saved.
-- Final release still requires an actual Admin sign-in/button write and observation on two browsers, followed by PR checks, merge, Pages deployment and anonymous public verification. Emulator/VM evidence alone does not establish those final steps.
+- Actual browser test: the owner signed in privately on Chrome. Clicking **Áp dụng cho tất cả thiết bị** published lotus; the independent Codex in-app browser received lotus and the same server timestamp without reload. Chrome then published corporate again and the other browser returned to corporate. Preview before saving stayed local, and the unauthenticated receiving browser could not publish. The final shared theme is `quyet-thang-corporate`.
+- Release gates: require green PR checks, merge, a successful Pages deployment, and anonymous HTML/static-asset plus public Firestore listener verification. Backend provisioning or emulator/VM success alone is not publication evidence.
 
 Primary technical references: [rules testing](https://firebase.google.com/docs/firestore/security/test-rules-emulator), [Firestore quickstart](https://firebase.google.com/docs/firestore/quickstart), [Web setup](https://firebase.google.com/docs/web/setup). Firebase Plugin's official MCP server was used for project/app provisioning, public SDK configuration, rules retrieval and user/role management. The CLI completed backend deployment after independent checks showed the MCP deploy job result alone was insufficient evidence.
