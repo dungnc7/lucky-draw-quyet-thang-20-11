@@ -319,13 +319,13 @@ body{background:#0D1B3D}
       <div class="side-section prize-section" hidden>
         <div class="side-label"><span>03</span> CƠ CẤU GIẢI THƯỞNG</div>
         <div class="prize-list" id="prizeList"></div>
-        <div class="total-prize"><span>Tổng ngân sách giải thưởng</span><strong id="totalPrizeValue">20.000.000 ₫</strong></div>
+        <span id="totalPrizeValue" hidden></span>
       </div>
       <div class="side-section music-section" hidden><div class="side-label"><span>04</span> NHẠC NỀN</div><input id="musicFile" type="file" accept="audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/aac,audio/mp4,.mp3,.wav,.ogg,.m4a" class="visually-hidden"><label for="musicFile" class="music-upload">♫ Chọn nhạc riêng (MP3 / WAV)</label><div id="musicFileName" class="music-file-name">Chưa chọn nhạc · dùng nhạc nền mặc định</div></div>
       <div class="side-section last-section">
         <div class="side-label"><span>05</span> QUẢN LÝ PHIÊN QUAY</div>
-        <div class="batch-dashboard"><span class="batch-dashboard-label">TIẾN ĐỘ CHƯƠNG TRÌNH</span><strong id="adminBatch">Giải khuyến khích · LƯỢT 1/5</strong><div><span id="adminPhase">Sẵn sàng</span><span>Còn <b id="adminBatchesLeft">13</b> lượt</span></div></div><div class="small-stat"><span>Đã trúng thưởng</span><strong id="sidebarAwarded">0 / 44</strong></div>
-        <div class="small-stat"><span>Nhân viên còn đủ điều kiện</span><strong id="sidebarRemaining">—</strong></div>
+        <div class="batch-dashboard"><span class="batch-dashboard-label">TIẾN ĐỘ CHƯƠNG TRÌNH</span><strong id="adminBatch">Chờ cấu hình</strong><div><span id="adminPhase">Sẵn sàng</span><span>Còn <b id="adminBatchesLeft">—</b> lượt</span></div></div><div class="small-stat"><span>Đã trúng thưởng</span><strong id="sidebarAwarded">—</strong></div>
+        <div class="small-stat"><span>Lượt đã hoàn thành</span><strong id="completedBatches">—</strong></div><div class="small-stat"><span>Thời gian quay dự kiến</span><strong id="estimatedDuration">—</strong></div><div class="small-stat"><span>Nhân viên còn đủ điều kiện</span><strong id="sidebarRemaining">—</strong></div>
         <button id="legacySessionBtn" class="secondary-btn full hidden">↓ Xuất phiên v2.3</button><button id="exportBtn" class="secondary-btn full" disabled>↓ Xuất kết quả Excel</button>
         <button id="auditBtn" class="secondary-btn full" disabled>↓ Xuất nhật ký JSON</button>
         <button id="resetBtn" class="danger-btn full">↻ Xóa phiên và làm lại</button>
@@ -349,7 +349,7 @@ body{background:#0D1B3D}
       </div>
       <div class="stage-card" id="stageCard">
         <div class="stage-card-top">
-          <span class="round-number" id="roundNumber">LƯỢT QUAY 01 / 13</span>
+          <span class="round-number" id="roundNumber">LƯỢT QUAY</span>
           <span class="round-status" id="roundStatus"><span class="status-dot"></span> SẴN SÀNG</span>
         </div>
         <div class="prize-glow">✦</div>
@@ -366,8 +366,8 @@ body{background:#0D1B3D}
       </div>
 
       <section class="results-section" aria-label="Kết quả quay thưởng">
-        <div class="section-heading"><div><div class="section-kicker">KẾT QUẢ CHƯƠNG TRÌNH</div><h3 id="resultsHeading">Danh sách may mắn</h3></div><div class="result-pill" id="resultCount">0 / 44 ĐÃ CÔNG BỐ</div></div>
-        <div id="resultsPanel" class="results-panel"><div class="empty-results"><div class="empty-symbol">✧</div><strong>Khoảnh khắc may mắn đang chờ phía trước</strong><span>Kết quả mỗi hạng giải sẽ tự động xuất hiện khi đồng hồ về 00:00.</span></div></div>
+        <div class="section-heading"><div><div class="section-kicker">KẾT QUẢ CHƯƠNG TRÌNH</div><h3 id="resultsHeading">Danh sách may mắn</h3></div><div class="result-pill" id="resultCount">CHƯA CÓ KẾT QUẢ</div></div>
+        <button id="handoverBtn" class="secondary-btn" type="button" disabled>Xuất danh sách trao thưởng</button><p id="handoverHelp" class="hint">Chỉ xuất người trúng đã xác nhận; không xuất kết quả mô phỏng.</p><div id="resultsPanel" class="results-panel"><div class="empty-results"><div class="empty-symbol">✧</div><strong>Khoảnh khắc may mắn đang chờ phía trước</strong><span>Kết quả mỗi hạng giải sẽ tự động xuất hiện khi đồng hồ về 00:00.</span></div></div>
       </section>
 
     </div>
@@ -507,101 +507,122 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if(/\.(xlsx|xlsm)$/i.test(file.name))return parseXlsx(file);
     throw new Error('Chỉ hỗ trợ file Excel .xlsx, .xlsm hoặc .csv. Với .xls cũ, vui lòng lưu thành .xlsx.');
   }
-  async function makeXlsx(rows, filename, sheetName='KhachHang'){
-    if(typeof JSZip==='undefined')throw new Error('Không thể xuất Excel: thiếu JSZip.');
-    const zip=new JSZip();
-    const rowXML=rows.map((row,i)=>`<row r="${i+1}">${row.map((value,j)=>{
-      if(value===null||value===undefined)return '';
-      const addr=columnName(j)+(i+1);
-      if(typeof value==='number'&&Number.isFinite(value))return `<c r="${addr}"><v>${value}</v></c>`;
-      return `<c r="${addr}" t="inlineStr"><is><t xml:space="preserve">${xmlEscape(value)}</t></is></c>`;
-    }).join('')}</row>`).join('');
-    const sheet=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${rowXML}</sheetData></worksheet>`;
-    zip.file('[Content_Types].xml','<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>');
-    zip.file('_rels/.rels','<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>');
-    zip.file('xl/_rels/workbook.xml.rels','<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>');
-    zip.file('xl/workbook.xml',`<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${xmlEscape(sheetName)}" sheetId="1" r:id="rId1"/></sheets></workbook>`);
-    zip.file('xl/worksheets/sheet1.xml',sheet);
-    const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
-    const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
-    return blob;
+  async function makeXlsx(rows,filename,sheetName='KhachHang'){
+    return makeWorkbook([{name:sheetName,rows,headerRow:1,filter:true,widths:(rows[0]||[]).map((_,i)=>i===0?10:25)}],filename);
   }
-  global.ExcelLocal={parseFile,parseCsv,makeXlsx};
+  async function makeWorkbook(sheets,filename,{download=true,beforeDownload}={}){
+    if(typeof JSZip==='undefined')throw Error('Không thể xuất Excel: thiếu JSZip.');
+    const zip=new JSZip(),ns='http://schemas.openxmlformats.org/spreadsheetml/2006/main',rel='http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+    const header='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+    const styles=header+`<styleSheet xmlns="${ns}"><numFmts count="1"><numFmt numFmtId="164" formatCode="#,##0 &quot;₫&quot;"/></numFmts><fonts count="3"><font><sz val="11"/><name val="Calibri"/><color rgb="FF0D1B3D"/></font><font><b/><sz val="11"/><name val="Calibri"/><color rgb="FFFFFFFF"/></font><font><b/><sz val="16"/><name val="Calibri"/><color rgb="FF0D1B3D"/></font></fonts><fills count="4"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF2E7BC3"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFEAF2FA"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border/><border><left style="hair"/><right style="hair"/><top style="hair"/><bottom style="hair"/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="7"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="1" applyAlignment="1"><alignment wrapText="1" vertical="center"/></xf><xf numFmtId="0" fontId="2" fillId="0" borderId="0"/><xf numFmtId="164" fontId="0" fillId="0" borderId="1" applyNumberFormat="1" applyAlignment="1"><alignment vertical="center"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="1" applyAlignment="1"><alignment wrapText="1" vertical="center"/></xf><xf numFmtId="0" fontId="0" fillId="3" borderId="1" applyAlignment="1"><alignment wrapText="1" vertical="center"/></xf><xf numFmtId="49" fontId="0" fillId="0" borderId="1" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+    zip.file('xl/styles.xml',styles);
+    sheets.forEach((s,k)=>{
+      const count=Math.max(...s.rows.map(r=>r.length),1),last=columnName(count-1),h=s.headerRow||1;
+      const rows=s.rows.map((row,i)=>`<row r="${i+1}" ht="${i===0&&h>1?30:i+1===h?32:s.rowHeight||25}" customHeight="1">${row.map((value,j)=>{
+        if(value===null||value===undefined)value='';const addr=columnName(j)+(i+1),style=i+1===h?1:i===0&&h>1?2:i+1>h&&s.textColumns?.includes(j)?6:i+1>h&&s.currencyColumns?.includes(j)?3:i+1>h?(i%2?4:5):0;
+        if(typeof value==='number'&&Number.isFinite(value))return `<c r="${addr}" s="${style}"><v>${value}</v></c>`;
+        // Always inline text: spreadsheet formulas, links and DDE are never inferred.
+        return `<c r="${addr}" s="${style}" t="inlineStr"><is><t xml:space="preserve">${xmlEscape(String(value).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g,''))}</t></is></c>`;
+      }).join('')}</row>`).join('');
+      const cols=(s.widths||[]).map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('');
+      zip.file(`xl/worksheets/sheet${k+1}.xml`,header+`<worksheet xmlns="${ns}"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><sheetViews><sheetView workbookViewId="0"><pane ySplit="${h}" topLeftCell="A${h+1}" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>${cols}</cols><sheetData>${rows}</sheetData>${s.merges?.length?`<mergeCells count="${s.merges.length}">${s.merges.map(ref=>`<mergeCell ref="${ref}"/>`).join('')}</mergeCells>`:''}${s.filter?`<autoFilter ref="A${h}:${last}${s.rows.length}"/>`:''}<printOptions horizontalCentered="1"/><pageMargins left="0.25" right="0.25" top="0.4" bottom="0.4" header="0.2" footer="0.2"/><pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="0"/><headerFooter><oddFooter>&amp;L${xmlEscape(s.name)}&amp;RTrang &amp;P / &amp;N</oddFooter></headerFooter></worksheet>`);
+    });
+    zip.file('[Content_Types].xml',header+`<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets.map((s,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}</Types>`);
+    zip.file('_rels/.rels',header+`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${rel}/officeDocument" Target="xl/workbook.xml"/></Relationships>`);
+    zip.file('xl/_rels/workbook.xml.rels',header+`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((s,i)=>`<Relationship Id="rId${i+1}" Type="${rel}/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join('')}<Relationship Id="rId${sheets.length+1}" Type="${rel}/styles" Target="styles.xml"/></Relationships>`);
+    zip.file('xl/workbook.xml',header+`<workbook xmlns="${ns}" xmlns:r="${rel}"><sheets>${sheets.map((s,i)=>`<sheet name="${xmlEscape(s.name)}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join('')}</sheets><definedNames>${sheets.map((s,i)=>`<definedName name="_xlnm.Print_Titles" localSheetId="${i}">'${xmlEscape(s.name.replace(/'/g,"''"))}'!$${s.headerRow||1}:$${s.headerRow||1}</definedName>`).join('')}</definedNames></workbook>`);
+    const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
+    if(download){if(beforeDownload&&!await beforeDownload())throw Error('Quyền xuất kết quả đã thay đổi.');const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}return blob;
+  }
+
+  global.ExcelLocal={parseFile,parseCsv,makeXlsx,makeWorkbook};
 })(window);
 
 </script>
 <script id="batch-engine">
-/* BatchEngine v2.4: pure state transitions; bundled inline for offline operation. */
+/* Dynamic draw engine. Defaults are a preset, not selection constraints. */
 (function(global){
 'use strict';
-const DRAW_MS=10_000, VERSION=4;
-const CONFIG_ID='v2.4-consolation-5x6';
-const CONFIG=Object.freeze([
- {key:'encouragement',count:30,batchSize:6}, {key:'fourth',count:8,batchSize:4},
- {key:'third',count:3,batchSize:1}, {key:'second',count:2,batchSize:1}, {key:'first',count:1,batchSize:1}
-].map(Object.freeze));
-const BATCHES=Object.freeze(CONFIG.flatMap((p,tierIndex)=>Array.from({length:p.count/p.batchSize},(_,i)=>Object.freeze({tierIndex,key:p.key,count:p.batchSize,number:i+1,total:p.count/p.batchSize}))));
-function create(){return {version:VERSION,configId:CONFIG_ID,phase:'READY',people:[],roundIndex:0,completed:[],pending:[],running:false,roundFinished:false,startedAt:null,roundStartedAt:null,roundEndsAt:0,locked:false}}
-function index(n){
- if(!Number.isSafeInteger(n)||n<1||n>0x100000000)throw Error('Phạm vi lấy mẫu không hợp lệ.');
- if(!global.crypto?.getRandomValues)throw Error('Trình duyệt không hỗ trợ số ngẫu nhiên an toàn.');
- const limit=Math.floor(0x100000000/n)*n,buf=new Uint32Array(1);let x;
- do{x=global.crypto.getRandomValues(buf)[0]}while(x>=limit);
- return x%n;
+const DRAW_MS=10_000,VERSION=5,CONFIG_ID='dynamic-v1',LEGACY_CONFIG_ID='v2.4-consolation-5x6';
+const LIMITS=Object.freeze({tiers:24,slotsPerTier:5000,batchSize:100,minDurationMs:1000,maxDurationMs:300000,participants:100000,amount:100_000_000_000});
+const defaults=[['encouragement','Giải khuyến khích',30,6,200000],['fourth','Giải tư',8,4,500000],['third','Giải ba',3,1,1000000],['second','Giải nhì',2,1,2000000],['first','Giải nhất',1,1,3000000]];
+const clone=x=>JSON.parse(JSON.stringify(x));
+const canonical=x=>Array.isArray(x)?'['+x.map(canonical).join(',')+']':x&&typeof x==='object'?'{'+Object.keys(x).sort().map(k=>JSON.stringify(k)+':'+canonical(x[k])).join(',')+'}':JSON.stringify(x);
+function exact(v,keys){if(!v||typeof v!=='object'||Array.isArray(v)||keys.some(k=>!Object.hasOwn(v,k))||Object.keys(v).some(k=>!keys.includes(k)))throw Error('Cấu hình giải thiếu trường hoặc có trường không được phép.');}
+function integer(v,min,max,label){if(!Number.isSafeInteger(v)||v<min||v>max)throw Error(label+': cần số nguyên từ '+min+' đến '+max+'.');return v;}
+function validateDraw(input){
+ const d=clone(input);exact(d,['rulesId','prizeIds','prizes']);
+ if(d.rulesId!==CONFIG_ID||!Array.isArray(d.prizes)||d.prizes.length<1||d.prizes.length>LIMITS.tiers)throw Error('Cơ cấu cần 1–'+LIMITS.tiers+' hạng giải.');
+ if(!Array.isArray(d.prizeIds)||d.prizeIds.length!==d.prizes.length)throw Error('Danh sách mã giải không khớp.');
+ const used=new Set();
+ d.prizes.forEach((p,i)=>{
+  exact(p,['key','name','count','batchSize','amount','durationMs']);
+  if(typeof p.key!=='string'||!/^[a-z][a-z0-9_-]{0,39}$/.test(p.key)||used.has(p.key)||d.prizeIds[i]!==p.key)throw Error('Mã giải phải duy nhất, ổn định và khớp thứ tự.');used.add(p.key);
+  if(typeof p.name!=='string'||!p.name.trim()||p.name.length>80||/[\u0000-\u001f]|\d{12}|github_pat_|ghp_|-----BEGIN/i.test(p.name))throw Error('Tên giải cần 1–80 ký tự, không có thông tin nhạy cảm.');
+  integer(p.count,1,LIMITS.slotsPerTier,'Số lượng giải');integer(p.batchSize,1,LIMITS.batchSize,'Số người mỗi lượt');integer(p.amount,0,LIMITS.amount,'Giá trị giải');integer(p.durationMs,LIMITS.minDurationMs,LIMITS.maxDurationMs,'Thời gian quay (ms)');if(p.durationMs%1000)throw Error('Thời gian quay cần là số giây nguyên.');
+ });
+ if(d.prizes.reduce((n,p)=>n+p.count,0)>LIMITS.participants)throw Error('Tổng số giải vượt giới hạn tài nguyên 100.000 người.');
+ return d;
 }
-function choose(pool,count){
- if(pool.length<count)throw Error('Không đủ nhân viên chưa trúng thưởng.');
- const arr=pool.slice();for(let i=0;i<count;i++){const j=i+index(arr.length-i);[arr[i],arr[j]]=[arr[j],arr[i]]}return arr.slice(0,count);
+function fromPrizes(prizes){return validateDraw({rulesId:CONFIG_ID,prizeIds:prizes.map(p=>p.key),prizes});}
+const DEFAULT_DRAW=freeze(fromPrizes(defaults.map(([key,name,count,batchSize,amount])=>({key,name,count,batchSize,amount,durationMs:DRAW_MS}))));
+function freeze(d){for(const p of d.prizes)Object.freeze(p);Object.freeze(d.prizes);Object.freeze(d.prizeIds);return Object.freeze(d);}
+function migrateDraw(draw){
+ if(draw?.rulesId===CONFIG_ID)return validateDraw(draw);
+ if(draw?.rulesId!==LEGACY_CONFIG_ID||draw.durationMs!==DRAW_MS||draw.prizes?.length!==defaults.length)throw Error('Không nhận diện được cơ cấu cũ; cần lưu bản sao trước khi chuyển đổi.');
+ const prizes=draw.prizes.map((p,i)=>{const d=defaults[i];if(p.key!==d[0]||p.count!==d[2]||p.batchSize!==d[3])throw Error('Cơ cấu cũ không khớp phiên đã duyệt.');return{...p,durationMs:DRAW_MS}});return fromPrizes(prizes);
 }
-function eligible(s){const won=new Set(s.completed.flatMap(r=>r.winners.map(p=>p.id)));return s.people.filter(p=>!won.has(p.id))}
-function canStart(s){return s.phase==='READY'&&s.people.length>=44&&Boolean(BATCHES[s.roundIndex])&&eligible(s).length>=BATCHES[s.roundIndex].count}
-// Persist a proposed transition synchronously BEFORE exposing it to UI/timer code.
-function commit(s,patch,persist){const proposed={...s,...patch};persist(proposed);Object.assign(s,patch);return true}
+const cache=new WeakMap();
+function schedule(draw=DEFAULT_DRAW){
+ if(cache.has(draw))return cache.get(draw);
+ const d=validateDraw(draw),batches=[];
+ d.prizes.forEach((p,tierIndex)=>{const total=Math.ceil(p.count/p.batchSize);for(let i=0;i<total;i++)batches.push(Object.freeze({tierIndex,key:p.key,count:Math.min(p.batchSize,p.count-i*p.batchSize),number:i+1,total,durationMs:p.durationMs}));});
+ const result=Object.freeze(batches);if(Object.isFrozen(draw))cache.set(draw,result);return result;
+}
+function totalSlots(draw=DEFAULT_DRAW){return draw.prizes.reduce((n,p)=>n+p.count,0);}
+function create(draw=DEFAULT_DRAW){return {version:VERSION,configId:CONFIG_ID,drawConfig:freeze(validateDraw(draw)),phase:'READY',people:[],roundIndex:0,completed:[],pending:[],running:false,roundFinished:false,startedAt:null,roundStartedAt:null,roundEndsAt:0,locked:false,demo:false};}
+function index(n){if(!Number.isSafeInteger(n)||n<1||n>0x100000000)throw Error('Phạm vi lấy mẫu không hợp lệ.');if(!global.crypto?.getRandomValues)throw Error('Trình duyệt không hỗ trợ số ngẫu nhiên an toàn.');const limit=Math.floor(0x100000000/n)*n,buf=new Uint32Array(1);let x;do{x=global.crypto.getRandomValues(buf)[0]}while(x>=limit);return x%n;}
+function choose(pool,count){if(pool.length<count)throw Error('Không đủ nhân viên chưa trúng thưởng.');const arr=pool.slice();for(let i=0;i<count;i++){const j=i+index(arr.length-i);[arr[i],arr[j]]=[arr[j],arr[i]]}return arr.slice(0,count);}
+function eligible(s){const won=new Set(s.completed.flatMap(r=>r.winners.map(p=>p.id)));return s.people.filter(p=>!won.has(p.id));}
+function canStart(s){const b=schedule(s.drawConfig)[s.roundIndex];return s.phase==='READY'&&s.people.length>=totalSlots(s.drawConfig)&&s.people.length<=LIMITS.participants&&Boolean(b)&&eligible(s).length>=b.count;}
+function commit(s,patch,persist){const proposed={...s,...patch};persist(proposed);Object.assign(s,patch);return true;}
 function begin(s,amount,persist,now=Date.now()){
- if(!canStart(s))return false;
- if(!Number.isSafeInteger(amount)||amount<0||amount>100_000_000_000)throw Error('Giá trị giải không hợp lệ.');
- const batch=BATCHES[s.roundIndex];
- return commit(s,{phase:'DRAWING',running:true,roundFinished:false,locked:true,pending:choose(eligible(s),batch.count),pendingAmount:amount,roundStartedAt:new Date(now).toISOString(),roundEndsAt:now+DRAW_MS,startedAt:s.startedAt||new Date(now).toISOString()},persist);
+ if(!canStart(s))return false;integer(amount,0,LIMITS.amount,'Giá trị giải');const b=schedule(s.drawConfig)[s.roundIndex];
+ return commit(s,{phase:'DRAWING',running:true,roundFinished:false,locked:true,pending:choose(eligible(s),b.count),pendingAmount:amount,roundStartedAt:new Date(now).toISOString(),roundEndsAt:now+b.durationMs,startedAt:s.startedAt||new Date(now).toISOString()},persist);
 }
 function finish(s,persist,now=Date.now()){
- if(s.phase!=='DRAWING'||now<s.roundEndsAt)return false;
- const b=BATCHES[s.roundIndex];
- if(s.pending.length!==b.count)throw Error('Thiếu kết quả lượt quay.');
- const r={batchIndex:s.roundIndex,batchNumber:b.number,batchTotal:b.total,tierKey:b.key,amount:s.pendingAmount,winners:s.pending.slice(),startedAt:s.roundStartedAt,finishedAt:new Date(now).toISOString(),poolSize:eligible(s).length};
+ if(s.phase!=='DRAWING'||now<s.roundEndsAt)return false;const b=schedule(s.drawConfig)[s.roundIndex];if(s.pending.length!==b.count)throw Error('Thiếu kết quả lượt quay.');
+ const r={batchIndex:s.roundIndex,batchNumber:b.number,batchTotal:b.total,tierKey:b.key,amount:s.pendingAmount,durationMs:b.durationMs,simulated:s.demo===true,winners:s.pending.slice(),startedAt:s.roundStartedAt,finishedAt:new Date(now).toISOString(),poolSize:eligible(s).length};
  return commit(s,{phase:'REVEAL',running:false,roundFinished:true,completed:[...s.completed,r],pending:[]},persist);
 }
-function dismiss(s,persist){if(s.phase!=='REVEAL')return false;return commit(s,{phase:'WAITING_NEXT_BATCH'},persist)}
-function next(s,persist){
- if(!['REVEAL','WAITING_NEXT_BATCH'].includes(s.phase))return false;
- const roundIndex=s.roundIndex+1;
- return commit(s,{roundIndex,phase:roundIndex===BATCHES.length?'COMPLETED':'READY',running:false,roundFinished:false,roundStartedAt:null,roundEndsAt:0,pendingAmount:null},persist);
-}
-function snapshot(s){return JSON.parse(JSON.stringify(Object.fromEntries(['version','configId','phase','people','roundIndex','completed','pending','pendingAmount','running','roundFinished','startedAt','roundStartedAt','roundEndsAt','locked','source','sheet','fingerprint','invalid','duplicated','prizeAmounts','eventName'].map(k=>[k,s[k]]))))}
+function dismiss(s,persist){if(s.phase!=='REVEAL')return false;return commit(s,{phase:'WAITING_NEXT_BATCH'},persist);}
+function next(s,persist){if(!['REVEAL','WAITING_NEXT_BATCH'].includes(s.phase))return false;const roundIndex=s.roundIndex+1;return commit(s,{roundIndex,phase:roundIndex===schedule(s.drawConfig).length?'COMPLETED':'READY',running:false,roundFinished:false,roundStartedAt:null,roundEndsAt:0,pendingAmount:null},persist);}
+function snapshot(s){return clone(Object.fromEntries(['version','configId','drawConfig','phase','people','roundIndex','completed','pending','pendingAmount','running','roundFinished','startedAt','roundStartedAt','roundEndsAt','locked','source','sheet','fingerprint','invalid','duplicated','prizeAmounts','eventName','demo'].map(k=>[k,s[k]])));}
 function restore(raw){
- const s=typeof raw==='string'?JSON.parse(raw):snapshot(raw);
- if(s.configId!==CONFIG_ID)throw Error('Cấu hình phiên đã thay đổi. Hãy xuất phiên cấu hình cũ trước khi tạo phiên mới.');
- const fail=()=>{throw Error('Phiên lưu không hợp lệ. Không quay lại tự động; hãy giữ tab và xuất dữ liệu để kiểm tra.')};
- if(s.version!==VERSION||!['READY','DRAWING','REVEAL','WAITING_NEXT_BATCH','COMPLETED'].includes(s.phase)||!Array.isArray(s.people)||s.people.length<1||s.people.length>100000||!Array.isArray(s.completed)||!Array.isArray(s.pending)||!Number.isInteger(s.roundIndex)||s.roundIndex<0||s.roundIndex>BATCHES.length)fail();
+ const s=typeof raw==='string'?JSON.parse(raw):clone(raw);let legacy=false;
+ if(s.version===4&&s.configId===LEGACY_CONFIG_ID){
+  legacy=true;const old=s.configurationSnapshot?.draw||{rulesId:LEGACY_CONFIG_ID,durationMs:DRAW_MS,prizes:clone(DEFAULT_DRAW.prizes).map(({durationMs,...p})=>({...p,amount:s.prizeAmounts?.[p.key]??p.amount}))};
+  s.drawConfig=migrateDraw(old);s.version=VERSION;s.configId=CONFIG_ID;s.demo=s.demo??String(s.source||'').includes('NHÂN VIÊN DEMO');
+ }
+ const fail=()=>{throw Error('Phiên lưu không hợp lệ. Không quay lại tự động; hãy giữ bản sao để kiểm tra.');};
+ if(s.version!==VERSION||s.configId!==CONFIG_ID)throw Error('Phiên dùng cơ cấu cũ chưa hỗ trợ. Hãy xuất bản sao trước khi tạo phiên mới.');
+ s.drawConfig=freeze(validateDraw(s.drawConfig));const batches=schedule(s.drawConfig);
+ if(!['READY','DRAWING','REVEAL','WAITING_NEXT_BATCH','COMPLETED'].includes(s.phase)||!Array.isArray(s.people)||s.people.length<1||s.people.length>LIMITS.participants||!Array.isArray(s.completed)||!Array.isArray(s.pending)||!Number.isInteger(s.roundIndex)||s.roundIndex<0||s.roundIndex>batches.length||typeof s.demo!=='boolean')fail();
  const identities=new Set(),codes=new Set(),cccds=new Set(),people=new Map();
  for(const p of s.people){
   if(!p||typeof p.id!=='string'||typeof p.name!=='string'||typeof p.code!=='string'||typeof p.cccd!=='string'||p.name.length>100||identities.has(p.id))fail();
-  if(p.code&&(!/^[\p{L}\p{N}._-]{1,40}$/u.test(p.code)||codes.has(p.code)))fail();
-  if(p.cccd&&(!/^\d{12}$/.test(p.cccd)||cccds.has(p.cccd)))fail();
-  if(p.id!==(p.code?'EMP:'+p.code:p.cccd?'CCCD:'+p.cccd:''))fail();
-  identities.add(p.id);if(p.code)codes.add(p.code);if(p.cccd)cccds.add(p.cccd);people.set(p.id,p);
+  if(p.code&&(!/^[\p{L}\p{N}._-]{1,40}$/u.test(p.code)||codes.has(p.code)))fail();if(p.cccd&&(!/^\d{12}$/.test(p.cccd)||cccds.has(p.cccd)))fail();if(p.id!==(p.code?'EMP:'+p.code:p.cccd?'CCCD:'+p.cccd:''))fail();identities.add(p.id);if(p.code)codes.add(p.code);if(p.cccd)cccds.add(p.cccd);people.set(p.id,p);
  }
  const drawing=s.phase==='DRAWING',revealed=['REVEAL','WAITING_NEXT_BATCH'].includes(s.phase),done=s.phase==='COMPLETED';
- if(s.running!==drawing||s.roundFinished!==revealed||done!==(s.roundIndex===BATCHES.length)||s.completed.length!==s.roundIndex+(revealed?1:0)||Boolean(s.locked)!==(drawing||s.completed.length>0))fail();
- const used=new Set();
- function winners(ws,count){if(!Array.isArray(ws)||ws.length!==count)fail();for(const p of ws){if(!p||!people.has(p.id)||used.has(p.id))fail();used.add(p.id)}return ws.map(p=>people.get(p.id))}
- s.completed=s.completed.map((r,i)=>{
-  const b=BATCHES[i];if(!b||r.batchIndex!==i||r.batchNumber!==b.number||r.batchTotal!==b.total||r.tierKey!==b.key||!Number.isSafeInteger(r.amount)||r.amount<0||r.amount>100_000_000_000||r.poolSize!==s.people.length-used.size||!Number.isFinite(Date.parse(r.startedAt))||!Number.isFinite(Date.parse(r.finishedAt))||Date.parse(r.finishedAt)-Date.parse(r.startedAt)<DRAW_MS)fail();
-  return {...r,winners:winners(r.winners,b.count)};
+ if(s.running!==drawing||s.roundFinished!==revealed||done!==(s.roundIndex===batches.length)||s.completed.length!==s.roundIndex+(revealed?1:0)||Boolean(s.locked)!==(drawing||s.completed.length>0))fail();
+ const used=new Set();function winners(ws,count){if(!Array.isArray(ws)||ws.length!==count)fail();return ws.map(p=>{if(!p||!people.has(p.id)||used.has(p.id))fail();used.add(p.id);return people.get(p.id)});}
+ s.completed=s.completed.map((r,i)=>{const b=batches[i];if(legacy){r.durationMs=b?.durationMs;r.simulated=s.demo;}
+  if(!b||r.batchIndex!==i||r.batchNumber!==b.number||r.batchTotal!==b.total||r.tierKey!==b.key||!Number.isSafeInteger(r.amount)||r.amount<0||r.amount>LIMITS.amount||r.durationMs!==b.durationMs||typeof r.simulated!=='boolean'||r.poolSize!==s.people.length-used.size||!Number.isFinite(Date.parse(r.startedAt))||!Number.isFinite(Date.parse(r.finishedAt))||Date.parse(r.finishedAt)-Date.parse(r.startedAt)<b.durationMs)fail();return {...r,winners:winners(r.winners,b.count)};
  });
- if(drawing){if(!BATCHES[s.roundIndex]||!Number.isFinite(Date.parse(s.roundStartedAt))||s.roundEndsAt!==Date.parse(s.roundStartedAt)+DRAW_MS||!Number.isSafeInteger(s.pendingAmount)||s.pendingAmount<0||s.pendingAmount>100_000_000_000)fail();s.pending=winners(s.pending,BATCHES[s.roundIndex].count)}else if(s.pending.length)fail();
- return s;
+ if(drawing){const b=batches[s.roundIndex];if(!b||!Number.isFinite(Date.parse(s.roundStartedAt))||s.roundEndsAt!==Date.parse(s.roundStartedAt)+b.durationMs||!Number.isSafeInteger(s.pendingAmount)||s.pendingAmount<0||s.pendingAmount>LIMITS.amount)fail();s.pending=winners(s.pending,b.count);}else if(s.pending.length)fail();
+ if(legacy)s.migratedFromVersion=4;return s;
 }
-global.BatchEngine=Object.freeze({DRAW_MS,VERSION,CONFIG_ID,CONFIG,BATCHES,create,index,choose,eligible,canStart,begin,finish,dismiss,next,snapshot,restore});
+global.BatchEngine=Object.freeze({DRAW_MS,VERSION,CONFIG_ID,LEGACY_CONFIG_ID,LIMITS,DEFAULT_DRAW,CONFIG:DEFAULT_DRAW.prizes,BATCHES:schedule(DEFAULT_DRAW),validateDraw,fromPrizes,migrateDraw,schedule,totalSlots,canonical,create,index,choose,eligible,canStart,begin,finish,dismiss,next,snapshot,restore});
 })(typeof window==='undefined'?globalThis:window);
 
 </script>
@@ -683,6 +704,10 @@ function validate(input,{publishedOnly=false}={}){
  const raw=typeof input==='string'?input:JSON.stringify(input);
  if(typeof raw!=='string'||new TextEncoder().encode(raw).length>MAX_BYTES)throw Error('Cấu hình vượt quá 32 KiB.');
  const c=JSON.parse(raw);
+ if(c.schemaVersion===2&&c.clientId==='lucky-draw-v26-shared-2'){
+  const draw=BatchEngine.validateDraw(c.draw),fixed={rulesId:BatchEngine.LEGACY_CONFIG_ID,durationMs:BatchEngine.DRAW_MS,prizes:PRIZES.map(p=>({...p}))};
+  validate({...c,schemaVersion:1,clientId:CLIENT_ID,draw:fixed},{publishedOnly});return {...c,draw};
+ }
  object(c,['schemaVersion','clientId','publication','event','draw','audio'],'Cấu hình');
  if(c.schemaVersion!==SCHEMA_VERSION||c.clientId!==CLIENT_ID)throw Error('Phiên bản cấu hình không tương thích. Hãy cập nhật trang hoặc dùng bản sao phù hợp.');
  object(c.publication,['state','revision','baseRevision','publishedAt'],'Xuất bản');
@@ -709,7 +734,7 @@ function validate(input,{publishedOnly=false}={}){
  else if(b?.kind==='solid'){object(b,['kind','color'],'Nền');if(!/^#[0-9a-fA-F]{6}$/.test(b.color))throw Error('Màu nền không hợp lệ.')}
  else throw Error('Nền không được hỗ trợ.');
  object(c.draw,['rulesId','durationMs','prizes'],'Luật quay');
- if(c.draw.rulesId!==BatchEngine.CONFIG_ID||c.draw.durationMs!==BatchEngine.DRAW_MS||!Array.isArray(c.draw.prizes)||c.draw.prizes.length!==PRIZES.length)throw Error('Luật quay không tương thích với cấu hình đã duyệt.');
+ if(c.draw.rulesId!==BatchEngine.LEGACY_CONFIG_ID||c.draw.durationMs!==BatchEngine.DRAW_MS||!Array.isArray(c.draw.prizes)||c.draw.prizes.length!==PRIZES.length)throw Error('Luật quay không tương thích với cấu hình đã duyệt.');
  c.draw.prizes.forEach((p,i)=>{object(p,['key','name','count','batchSize','amount'],'Giải thưởng');const approved=PRIZES[i];for(const key of ['key','count','batchSize'])if(p[key]!==approved[key])throw Error('Không được đổi thứ tự, số người hoặc số lượt của cơ cấu đã duyệt.');text(p.name,80,'Tên giải');if(!Number.isSafeInteger(p.amount)||p.amount<0||p.amount>100_000_000_000)throw Error('Tiền giải không hợp lệ.')});
  object(c.audio,['countdownEnabled','musicEnabled','music'],'Âm thanh',['celebrationEnabled']);
  if(Object.hasOwn(c.audio,'celebrationEnabled')&&typeof c.audio.celebrationEnabled!=='boolean')throw Error('Tùy chọn chúc mừng không hợp lệ.');
@@ -720,7 +745,7 @@ function validate(input,{publishedOnly=false}={}){
 }
 function createDraft(event,{amounts={},audio={},baseRevision=0}={}){
  const e=EventPlatform.normalize(event),content=Object.fromEntries(CONTENT_KEYS.map(k=>[k,e.content[k]]));
- return validate({schemaVersion:SCHEMA_VERSION,clientId:CLIENT_ID,publication:{state:'draft',revision:0,baseRevision,publishedAt:null},event:{id:e.id,presetId:e.presetId,content,...(e.details?{details:e.details}:{}),appearance:{themeId:e.appearance.themeId||EventPlatform.DEFAULT_THEME_ID,logo:{kind:'builtin',id:'quyet-thang-original'},background:e.appearance.background||{kind:'theme'}}},draw:{rulesId:BatchEngine.CONFIG_ID,durationMs:BatchEngine.DRAW_MS,prizes:PRIZES.map(p=>({...p,amount:amounts[p.key]??p.amount}))},audio:{countdownEnabled:audio.countdownEnabled??true,musicEnabled:audio.musicEnabled??false,music:{kind:'builtin',id:'synthesized-suspense'}}});
+ return validate({schemaVersion:SCHEMA_VERSION,clientId:CLIENT_ID,publication:{state:'draft',revision:0,baseRevision,publishedAt:null},event:{id:e.id,presetId:e.presetId,content,...(e.details?{details:e.details}:{}),appearance:{themeId:e.appearance.themeId||EventPlatform.DEFAULT_THEME_ID,logo:{kind:'builtin',id:'quyet-thang-original'},background:e.appearance.background||{kind:'theme'}}},draw:{rulesId:BatchEngine.LEGACY_CONFIG_ID,durationMs:BatchEngine.DRAW_MS,prizes:PRIZES.map(p=>({...p,amount:amounts[p.key]??p.amount}))},audio:{countdownEnabled:audio.countdownEnabled??true,musicEnabled:audio.musicEnabled??false,music:{kind:'builtin',id:'synthesized-suspense'}}});
 }
 function preparePublication(draft,current,publishedAt){
  const c=validate(draft);if(c.publication.state!=='draft')throw Error('Chỉ xuất bản từ bản nháp đã xem trước.');
@@ -738,7 +763,7 @@ function comparePublication(next,previous){
 function freeze(config){const c=validate(config);const walk=o=>{Object.values(o).forEach(v=>{if(v&&typeof v==='object')walk(v)});return Object.freeze(o)};return walk(c)}
 function assertSnapshot(snapshot,config){
  const c=validate(config);if(snapshot.eventId&&snapshot.eventId!==c.event.id)throw Error('Phiên quay và cấu hình không cùng sự kiện.');
- if(snapshot.locked){for(const p of c.draw.prizes)if(snapshot.prizeAmounts?.[p.key]!==p.amount)throw Error('Tiền giải của phiên đã khóa không khớp bản chụp cấu hình.');for(const r of snapshot.completed||[])if(r.amount!==c.draw.prizes.find(p=>p.key===r.tierKey)?.amount)throw Error('Tiền giải kết quả không khớp cấu hình đã khóa.');if(snapshot.running&&snapshot.pendingAmount!==c.draw.prizes[BatchEngine.BATCHES[snapshot.roundIndex]?.tierIndex]?.amount)throw Error('Tiền giải đang quay không khớp cấu hình đã khóa.')}
+ if(snapshot.locked){const batches=BatchEngine.schedule(BatchEngine.migrateDraw(c.draw));if(snapshot.drawConfig&&canonical(snapshot.drawConfig)!==canonical(BatchEngine.migrateDraw(c.draw)))throw Error('Cơ cấu phiên không khớp cấu hình đã khóa.');for(const p of c.draw.prizes)if(snapshot.prizeAmounts?.[p.key]!==p.amount)throw Error('Tiền giải của phiên đã khóa không khớp bản chụp cấu hình.');for(const r of snapshot.completed||[])if(r.amount!==c.draw.prizes.find(p=>p.key===r.tierKey)?.amount)throw Error('Tiền giải kết quả không khớp cấu hình đã khóa.');if(snapshot.running&&snapshot.pendingAmount!==c.draw.prizes[batches[snapshot.roundIndex]?.tierIndex]?.amount)throw Error('Tiền giải đang quay không khớp cấu hình đã khóa.')}
  return true;
 }
 function receive(state,input,{locked=false}={}){if(locked&&!state.applied)throw Error('Thiếu cấu hình đã khóa của phiên.');const config=validate(input,{publishedOnly:true});comparePublication(config,state.latest);return {latest:config,applied:locked?state.applied:config,deferred:locked}}
@@ -757,15 +782,16 @@ global.SharedConfiguration=Object.freeze({SCHEMA_VERSION,CLIENT_ID,MAX_BYTES,PRI
 /* Versioned public settings. No participant/session state is accepted or exported. */
 (function(global){
 'use strict';
-const PATH='sharedEvent/live',SCHEMA_VERSION=2,CACHE_KEY='lucky-public-settings-v2',DRAFT_KEY='lucky-settings-edit-v2';
+const PATH='sharedEvent/live',SCHEMA_VERSION=3,CACHE_KEY='lucky-public-settings-v2',DRAFT_KEY='lucky-settings-edit-v2';
 const copy=x=>JSON.parse(JSON.stringify(x)),canonical=SharedConfiguration.canonical;
 function keys(o,wanted){if(!o||typeof o!=='object'||Array.isArray(o)||Object.keys(o).some(k=>!wanted.includes(k))||wanted.some(k=>!Object.hasOwn(o,k)))throw Error('Cấu hình có trường thiếu hoặc không được phép.');}
-function validate(settings){
+function validate(settings,{allowLegacy=false}={}){
  keys(settings,['event','draw','audio']);
- const c=SharedConfiguration.validate({schemaVersion:1,clientId:SharedConfiguration.CLIENT_ID,publication:{state:'published',revision:1,baseRevision:0,publishedAt:'2000-01-01T00:00:00.000Z'},...copy(settings)});
+ const value=copy(settings),draw=allowLegacy?BatchEngine.migrateDraw(value.draw):BatchEngine.validateDraw(value.draw);
+ const c=SharedConfiguration.validate({schemaVersion:1,clientId:SharedConfiguration.CLIENT_ID,publication:{state:'published',revision:1,baseRevision:0,publishedAt:'2000-01-01T00:00:00.000Z'},...value,draw:{rulesId:BatchEngine.LEGACY_CONFIG_ID,durationMs:BatchEngine.DRAW_MS,prizes:SharedConfiguration.PRIZES.map(p=>({...p}))}});
  keys(c.event,['id','presetId','content','appearance','details']);keys(c.audio,['countdownEnabled','musicEnabled','music','celebrationEnabled']);
  if(!c.event.details)throw Error('Thiếu thông tin tổ chức và ngày sự kiện.');
- return {event:c.event,draw:c.draw,audio:c.audio};
+ return {event:c.event,draw,audio:c.audio};
 }
 function stamp(value,cached=false){
  const d=typeof value?.toDate==='function'?value.toDate():cached&&typeof value==='string'?new Date(value):null;
@@ -773,26 +799,27 @@ function stamp(value,cached=false){
 }
 function document(raw,{cached=false}={}){
  keys(raw,['schemaVersion','revision','updatedAt','settings']);
- if(raw.schemaVersion!==SCHEMA_VERSION||!Number.isSafeInteger(raw.revision)||raw.revision<1||raw.revision>2147483647)throw Error('Phiên bản cấu hình không tương thích.');
- return {schemaVersion:SCHEMA_VERSION,revision:raw.revision,updatedAt:stamp(raw.updatedAt,cached),settings:validate(raw.settings)};
+ if(![2,SCHEMA_VERSION].includes(raw.schemaVersion)||!Number.isSafeInteger(raw.revision)||raw.revision<1||raw.revision>2147483647)throw Error('Phiên bản cấu hình không tương thích.');
+ return {schemaVersion:SCHEMA_VERSION,revision:raw.revision,updatedAt:stamp(raw.updatedAt,cached),settings:validate(raw.settings,{allowLegacy:raw.schemaVersion===2})};
 }
 function migrate(legacy,legacyTheme){
  const c=SharedConfiguration.validate(legacy,{publishedOnly:true});const match=c.event.content.occasion.match(/(\d{2})\/(\d{2})\/(\d{4})/);
  c.event.details=c.event.details||{organization:'TRUNG TÂM GIÁO DỤC NGHỀ NGHIỆP QUYẾT THẮNG',date:match?`${match[3]}-${match[2]}-${match[1]}`:'2026-11-20'};
  if(legacyTheme){keys(legacyTheme,['schemaVersion','themeId','updatedAt']);if(legacyTheme.schemaVersion!==1||!EventPlatform.validTheme(legacyTheme.themeId))throw Error('Theme cũ không hợp lệ.');c.event.appearance.themeId=legacyTheme.themeId;}
  c.audio.celebrationEnabled=c.audio.celebrationEnabled??true;
- return validate({event:c.event,draw:c.draw,audio:c.audio});
+ return validate({event:c.event,draw:BatchEngine.migrateDraw(c.draw),audio:c.audio});
 }
 function legacy(settings,revision=1,publishedAt='2000-01-01T00:00:00.000Z'){
- return SharedConfiguration.validate({schemaVersion:1,clientId:SharedConfiguration.CLIENT_ID,publication:{state:'published',revision:Math.max(1,revision),baseRevision:Math.max(1,revision)-1,publishedAt},...validate(settings)});
+ return SharedConfiguration.validate({schemaVersion:2,clientId:'lucky-draw-v26-shared-2',publication:{state:'published',revision:Math.max(1,revision),baseRevision:Math.max(1,revision)-1,publishedAt},...validate(settings)});
 }
 function equal(a,b){return canonical(a)===canonical(b);}
 function conflict(){const e=Error('Có cấu hình mới hơn. Hãy xem bản mới trước khi lưu.');e.code='settings/conflict';return e;}
 async function publish(api,settings,baseRevision){
- const next=validate(settings);if(!api.currentUser())throw Error('Cần đăng nhập quản trị.');
+ const next=validate(settings);if(!Number.isSafeInteger(baseRevision)||baseRevision<0||baseRevision>=2147483647)throw Error('Phiên bản nền không hợp lệ hoặc đã đạt giới hạn.');if(!api.currentUser())throw Error('Cần đăng nhập quản trị.');
  if(!await api.isAdmin())throw Error('Tài khoản không có quyền Admin.');
+ if(api.stage)await api.stage(next,baseRevision+1);
  const revision=await api.transaction(async tx=>{
-  const raw=await tx.read();const current=raw?document(raw):null;
+  const raw=await tx.read();const current=raw?{revision:raw.revision}:null;if(raw&&(![2,3].includes(raw.schemaVersion)||!Number.isSafeInteger(raw.revision)||raw.revision<1))throw Error('Phiên bản cấu hình hiện tại không tương thích.');
   if((current?.revision||0)!==baseRevision)throw conflict();
   if(baseRevision>=2147483647)throw Error('Đã đạt giới hạn phiên bản.');
   tx.write({schemaVersion:SCHEMA_VERSION,revision:baseRevision+1,updatedAt:api.serverTimestamp(),settings:next});return baseRevision+1;
@@ -813,33 +840,64 @@ class Editor{
  }
  acceptLatest(){if(!this.latest)return;this.baseRevision=this.latest.revision;this.draft=copy(this.latest.settings);this.dirty=false;this.conflicted=false;}
  confirm(d){this.latest=document(d,{cached:true});this.acceptLatest();}
- restoreDraft(raw){keys(raw,['baseRevision','settings']);if(!Number.isSafeInteger(raw.baseRevision)||raw.baseRevision<0)throw Error('Bản sửa cục bộ không hợp lệ.');this.baseRevision=raw.baseRevision;this.draft=validate(raw.settings);this.dirty=true;this.conflicted=!!this.latest&&this.latest.revision!==this.baseRevision;}
+ restoreDraft(raw){keys(raw,['baseRevision','settings']);if(!Number.isSafeInteger(raw.baseRevision)||raw.baseRevision<0)throw Error('Bản sửa cục bộ không hợp lệ.');this.baseRevision=raw.baseRevision;this.draft=validate(raw.settings,{allowLegacy:true});this.dirty=true;this.conflicted=!!this.latest&&this.latest.revision!==this.baseRevision;}
 }
-global.EventSettings=Object.freeze({PATH,SCHEMA_VERSION,CACHE_KEY,DRAFT_KEY,copy,canonical,validate,document,migrate,legacy,equal,publish,Editor});
+const BLOCK_SIZE=4;
+function pack(settings,revision,generation){
+ if(typeof generation!=='string'||!/^g-[a-z0-9-]{8,60}$/.test(generation))throw Error('Mã phiên công bố không hợp lệ.');
+ const v=validate(settings),blocks=[];
+ for(let i=0;i<v.draw.prizes.length;i+=BLOCK_SIZE){const prizes=v.draw.prizes.slice(i,i+BLOCK_SIZE);blocks.push({schemaVersion:1,revision,prizeIds:prizes.map(p=>p.key),prizes,slots:prizes.reduce((n,p)=>n+p.count,0)});}
+ return {settings:{event:v.event,audio:v.audio,draw:{rulesId:v.draw.rulesId,prizeIds:v.draw.prizeIds,totalSlots:BatchEngine.totalSlots(v.draw),generation}},blocks};
+}
+function blockCount(raw){const ids=raw?.settings?.draw?.prizeIds;if(!Array.isArray(ids)||ids.length<1||ids.length>BatchEngine.LIMITS.tiers)throw Error('Thiếu danh sách mã giải hợp lệ.');return Math.ceil(ids.length/BLOCK_SIZE);}
+function assemble(raw,blocks){
+ if(raw.schemaVersion===2)return raw;
+ keys(raw.settings.draw,['rulesId','prizeIds','totalSlots','generation']);if(!/^g-[a-z0-9-]{8,60}$/.test(raw.settings.draw.generation))throw Error('Mã cơ cấu giải không hợp lệ.');
+ const n=blockCount(raw);if(!Array.isArray(blocks)||blocks.length!==n)throw Error('Chưa nhận đủ cơ cấu giải.');
+ const prizes=[];
+ blocks.forEach((b,i)=>{keys(b,['schemaVersion','revision','prizeIds','prizes','slots','createdAt']);if(b.schemaVersion!==1||b.revision!==raw.revision||!Array.isArray(b.prizes)||b.prizes.length<1||b.prizes.length>BLOCK_SIZE||!equal(b.prizeIds,raw.settings.draw.prizeIds.slice(i*BLOCK_SIZE,(i+1)*BLOCK_SIZE))||!equal(b.prizeIds,b.prizes.map(p=>p.key))||b.slots!==b.prizes.reduce((n,p)=>n+p.count,0))throw Error('Cơ cấu giải chưa khớp phiên bản; đang chờ bản đầy đủ.');prizes.push(...b.prizes)});
+ const draw=BatchEngine.fromPrizes(prizes);if(raw.settings.draw.rulesId!==draw.rulesId||raw.settings.draw.totalSlots!==BatchEngine.totalSlots(draw))throw Error('Tổng số giải không khớp.');
+ const result={...raw,settings:{...raw.settings,draw}};document(result);return result;
+}
+global.EventSettings=Object.freeze({PATH,SCHEMA_VERSION,CACHE_KEY,DRAFT_KEY,copy,canonical,validate,document,migrate,legacy,equal,publish,Editor,BLOCK_SIZE,pack,blockCount,assemble});
+})(typeof window==='undefined'?globalThis:window);
+
+(function(global){
+'use strict';
+function build(snapshot,event,exportedAt=new Date().toISOString()){
+ const s=BatchEngine.restore(snapshot),draw=s.drawConfig;
+ const rounds=s.completed.filter(r=>!r.simulated),count=rounds.reduce((n,r)=>n+r.winners.length,0);
+ if(!count)throw Error('Chưa có người trúng thưởng đã xác nhận. Kết quả mô phỏng không dùng để trao thưởng.');
+ const complete=count===BatchEngine.totalSlots(draw),status=complete?'Hoàn tất':'Tạm thời',title=complete?'DANH SÁCH HOÀN TẤT':'DANH SÁCH TẠM THỜI';
+ const name=event.content.title,date=event.details?.date||'',totalBatches=BatchEngine.schedule(draw).length;
+ const rows=[[title],[name],['Ngày tổ chức: '+date+' · Xuất lúc: '+exportedAt],['STT','Mã nhân viên','Họ và tên','Phòng ban','Hạng giải','Giá trị giải thưởng (VNĐ)','Lượt quay','Trạng thái trao thưởng','Chữ ký người nhận','Ghi chú']];
+ let n=0;
+ // Configuration is ordered from opening prize to final/highest priority prize.
+ for(const p of [...draw.prizes].reverse())for(const r of rounds.filter(r=>r.tierKey===p.key).sort((a,b)=>a.batchIndex-b.batchIndex))for(const w of r.winners)rows.push([++n,String(w.code||''),w.name,w.department||'',p.name,r.amount,r.batchIndex+1,'Chưa trao','','']);
+ const summary=[['TỔNG HỢP GIẢI THƯỞNG'],['Tên chương trình',name],['Ngày tổ chức',date],['Xuất lúc',exportedAt],['Trạng thái',status],['Người trúng đã xác nhận',count],['Số người dự kiến',BatchEngine.totalSlots(draw)],['Lượt hoàn thành / tổng lượt',rounds.length+' / '+totalBatches],['Hạng giải','Số giải dự kiến','Đã xác nhận','Còn lại','Giá trị mỗi giải (VNĐ)']];
+ for(const p of [...draw.prizes].reverse()){const confirmed=rounds.filter(r=>r.tierKey===p.key).reduce((n,r)=>n+r.winners.length,0);summary.push([p.name,p.count,confirmed,p.count-confirmed,p.amount]);}
+ const safe=name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').replace(/[^a-zA-Z0-9]+/g,'_').replace(/^_|_$/g,'').slice(0,100)||'Su_Kien';
+ return {filename:'Danh_Sach_Trao_Thuong_'+safe+'_'+exportedAt.slice(0,10)+'_'+(complete?'Hoan_Tat':'Tam_Thoi')+'.xlsx',count,complete,sheets:[{name:'DANH SÁCH TRAO THƯỞNG',rows,headerRow:4,filter:true,textColumns:[1],merges:['A1:J1','A2:J2','A3:J3'],currencyColumns:[5],widths:[7,18,29,23,25,23,12,22,27,28],rowHeight:38},{name:'TỔNG HỢP GIẢI THƯỞNG',rows:summary,headerRow:9,filter:true,merges:['A1:E1','B2:E2','B3:E3','B4:E4'],currencyColumns:[4],widths:[38,32,24,28,28],rowHeight:28}]};
+}
+global.AwardHandover=Object.freeze({build});
 })(typeof window==='undefined'?globalThis:window);
 
 </script>
 <script>
 (function(){
 'use strict';
-const DRAW_MS = BatchEngine.DRAW_MS;
+let DRAW_MS = BatchEngine.DRAW_MS;
 let settingsDeferred=null;
 const builtinLogo=document.querySelector('.brand-logo')?.getAttribute('src')||'';
-const BATCHES=BatchEngine.BATCHES;
-const currentBatch=()=>BATCHES[state.roundIndex];
+let BATCHES=BatchEngine.BATCHES;
+const currentBatch=()=>{const b=BATCHES[state.roundIndex];DRAW_MS=b?.durationMs||BatchEngine.DRAW_MS;return b};
 const currentTier=()=>PRIZES[currentBatch()?.tierIndex];
 const batchLabel=b=>`LƯỢT ${b.number}/${b.total}`;
 const LEGACY_STORAGE_KEY='lucky-draw-quyet-thang-2011-v4-tab-session';
 let STORAGE_KEY=LEGACY_STORAGE_KEY;
 let PRIZE_SETTINGS_KEY='lucky-draw-quyet-thang-2011-prize-settings-v1';
 const SESSION_VERSION=4;
-const PRIZES=[
-  {key:'encouragement',name:'Giải khuyến khích',stage:'GIẢI KHUYẾN KHÍCH',count:30,amount:200_000,icon:'✧'},
-  {key:'fourth',name:'Giải tư',stage:'GIẢI TƯ',count:8,amount:500_000,icon:'✦'},
-  {key:'third',name:'Giải ba',stage:'GIẢI BA',count:3,amount:1_000_000,icon:'★'},
-  {key:'second',name:'Giải nhì',stage:'GIẢI NHÌ',count:2,amount:2_000_000,icon:'◆'},
-  {key:'first',name:'Giải nhất',stage:'GIẢI NHẤT',count:1,amount:3_000_000,icon:'♛'}
-];
+const PRIZES=BatchEngine.DEFAULT_DRAW.prizes.map(p=>({...p,stage:p.name.toLocaleUpperCase('vi-VN'),icon:({encouragement:'✧',fourth:'✦',third:'★',second:'◆',first:'♛'})[p.key]||'✦'}));
 const DEFAULT_PRIZE_AMOUNTS=Object.freeze(Object.fromEntries(PRIZES.map(p=>[p.key,p.amount])));
 const $=s=>document.querySelector(s);
 const el={
@@ -861,7 +919,7 @@ const cleanId=v=>String(v??'').trim().replace(/\s/g,'').replace(/^'/,'');
 const displayCode=p=>p.code||'NV-'+String(state.people.findIndex(person=>person.id===p.id)+1).padStart(5,'0');
 const reelLabel=()=> 'MÃ NHÂN VIÊN ĐANG QUAY';
 const maskName=name=>name||'Nhân viên';
-const totalWinners=PRIZES.reduce((a,p)=>a+p.count,0);
+let totalWinners=PRIZES.reduce((a,p)=>a+p.count,0);
 const state=Object.assign(BatchEngine.create(),{source:'',sheet:'',fingerprint:'',invalid:0,duplicated:0,awarded:new Set(),deadline:0,eligible:[],tickInterval:null,reelTick:0,projector:false,soundEnabled:true,musicEnabled:false,audioCtx:null,lastBeepSecond:-1,musicTimer:null,musicStep:0,musicTime:0,musicGain:null,musicUrl:null,musicAudio:null,audioNodes:new Set(),recoveryBlocked:false});
 let toastTimer=null;
 let recoveryBackup=null;
@@ -875,7 +933,8 @@ const SHARED_POINTER='lucky-shared-session-pointer-v1',PUBLIC_CACHE='lucky-publi
 function isDraftMode(){return sharedMode==='draft'}
 function configurationForCurrent(){
   if(!isDraftMode()&&appliedConfiguration)return SharedConfiguration.validate(appliedConfiguration);
-  return SharedConfiguration.createDraft(activeEvent,{amounts:prizeAmounts(),audio:{countdownEnabled:state.soundEnabled,musicEnabled:state.musicEnabled},baseRevision:latestPublication?.publication.revision||0});
+  const draft=SharedConfiguration.createDraft(activeEvent,{amounts:prizeAmounts(),audio:{countdownEnabled:state.soundEnabled,musicEnabled:state.musicEnabled},baseRevision:latestPublication?.publication.revision||0});
+  return SharedConfiguration.validate({...draft,schemaVersion:2,clientId:'lucky-draw-v26-shared-2',draw:BatchEngine.fromPrizes(PRIZES.map(({key,name,count,batchSize,amount,durationMs})=>({key,name,count,batchSize,amount,durationMs:durationMs||BatchEngine.DRAW_MS})))});
 }
 function renderSharedControls(){
   const pub=latestPublication?.publication||(appliedConfiguration?.publication.state==='published'?appliedConfiguration.publication:null),active=(sessionFrozenConfiguration||appliedConfiguration)?.publication;
@@ -1203,7 +1262,7 @@ function restorePrizeSettings(){
 }
 function totalBudget(){return PRIZES.reduce((sum,p)=>sum+p.amount*p.count,0)}
 function canChangePrizes(){return isDraftMode()&&configurationReady&&!state.locked&&!state.recoveryBlocked}
-function updateBudget(){el.totalBudget.textContent=money(totalBudget())+' ₫'}
+function updateBudget(){el.totalBudget.textContent='';}
 function changePrizeAmount(target){
   if(!target||!target.matches?.('[data-prize-key]'))return;
   if(!canChangePrizes()){
@@ -1236,10 +1295,10 @@ function restoreSession(){
   const storage=safeSessionStorage();if(!storage)return false;
   try{
     const raw=storage.getItem(STORAGE_KEY);
-    if(raw&&JSON.parse(raw).configId!==BatchEngine.CONFIG_ID){
+    if(raw&&![BatchEngine.CONFIG_ID,BatchEngine.LEGACY_CONFIG_ID].includes(JSON.parse(raw).configId)){
       recoveryBackup={raw,filename:'phien-cau-hinh-cu.json'};
       $('#legacySessionBtn').textContent='↓ Xuất phiên cấu hình cũ';$('#legacySessionBtn').classList.remove('hidden');
-      state.recoveryBlocked=true;toast('Cấu hình đã đổi thành 5 lượt × 6 người. Hãy xuất phiên cấu hình cũ, lưu kết quả rồi xóa phiên để bắt đầu phiên mới.','error');return false;
+      state.recoveryBlocked=true;toast('Phiên dùng cơ cấu chưa hỗ trợ. Hãy xuất bản sao và lưu kết quả trước khi tạo phiên mới.','error');return false;
     }
     if(!raw){
       if(activeEvent.id==='legacy-event'&&storage.getItem('lucky-draw-quyet-thang-2011-v3-tab-session')){
@@ -1248,6 +1307,8 @@ function restoreSession(){
       return false;
     }
     const saved=BatchEngine.restore(raw);
+    if(saved.migratedFromVersion===4){storage.setItem(STORAGE_KEY+'-v4-backup',raw);recoveryBackup={raw,filename:'phien-v4-truoc-chuyen-doi.json'};$('#legacySessionBtn').textContent='↓ Xuất bản sao phiên v4';$('#legacySessionBtn').classList.remove('hidden');}
+    syncRuntimeDraw(saved.drawConfig);
     if(saved.eventId&&saved.eventId!==activeEvent.id)throw Error('Phiên lưu thuộc một sự kiện khác.');
     if(saved.configurationSnapshot){SharedConfiguration.assertSnapshot(saved,saved.configurationSnapshot);applySettingsPrizeLabels(saved.configurationSnapshot);if(saved.locked)sessionFrozenConfiguration=SharedConfiguration.freeze(saved.configurationSnapshot)}
     applyPrizeAmounts(saved.prizeAmounts);Object.assign(state,saved);
@@ -1297,7 +1358,7 @@ function countdownBeep(remaining){
   stopCountdown();if(!state.soundEnabled||remaining<1||remaining>10)return;
   try{
     const ctx=audioContext();if(!ctx)return;
-    const intense=remaining<=3,pitch=intense?880+(3-remaining)*110:440+(10-remaining)*24;
+    const intense=remaining<=3,pitch=intense?880+(3-remaining)*110:440+Math.max(0,Math.min(10,DRAW_MS/1000)-remaining)*24;
     playNote(pitch,ctx.currentTime,intense?.16:.10,intense?.10:.055,'triangle',null,state.audioNodes);
     if(intense)playNote(pitch*1.25,ctx.currentTime+.22,.10,.07,'triangle',null,state.audioNodes);
   }catch(err){}
@@ -1380,9 +1441,9 @@ function lockData(){
 }
 function renderPrizes(){
   const locked=!canChangePrizes();
-  el.list.innerHTML=PRIZES.map((p,i)=>`<div class="prize-row ${i===currentBatch()?.tierIndex?'active':''} ${state.completed.filter(r=>r.tierKey===p.key).length===BatchEngine.CONFIG[i].count/BatchEngine.CONFIG[i].batchSize?'completed':''}">
+  el.list.innerHTML=PRIZES.map((p,i)=>`<div class="prize-row ${i===currentBatch()?.tierIndex?'active':''} ${state.completed.filter(r=>r.tierKey===p.key).length===Math.ceil(p.count/p.batchSize)?'completed':''}">
     <div class="prize-icon">${p.icon}</div>
-    <div class="prize-info"><div class="prize-row-title">${escapeHtml(p.name)}</div><div class="prize-row-meta">${p.count} giải · ${BatchEngine.CONFIG[i].count/BatchEngine.CONFIG[i].batchSize} lượt × ${BatchEngine.CONFIG[i].batchSize}</div></div>
+    <div class="prize-info"><div class="prize-row-title">${escapeHtml(p.name)}</div><div class="prize-row-meta">${p.count} giải · ${Math.ceil(p.count/p.batchSize)} lượt × ${p.batchSize}</div></div>
     <label class="prize-edit"><span>VNĐ / giải</span><input type="text" inputmode="numeric" autocomplete="off" spellcheck="false" data-prize-key="${p.key}" aria-label="Giá trị ${escapeHtml(p.name)} (VNĐ)" value="${money(p.amount)}" ${locked?'disabled title="Khóa khi đã bắt đầu quay"':''}></label></div>`).join('');
   updateBudget();
 }
@@ -1400,12 +1461,15 @@ function updateStatus(){
   el.export.disabled=complete===0;el.audit.disabled=complete===0;
   el.summary.classList.toggle('ready',state.people.length>=totalWinners);
   $('#adminBatch').textContent=currentBatch()?`${currentTier().name} · ${batchLabel(currentBatch())}`:'Đã hoàn tất';
+  $('#completedBatches').textContent=state.completed.length+' / '+BATCHES.length;
+  $('#estimatedDuration').textContent=BATCHES.reduce((n,b)=>n+b.durationMs,0)/1000+' giây';
   $('#adminBatchesLeft').textContent=String(BATCHES.length-state.completed.length);
   $('#adminPhase').textContent=state.recoveryBlocked?'Cần kiểm tra phiên':({READY:'Sẵn sàng',DRAWING:'Đang quay',REVEAL:'Công bố kết quả',WAITING_NEXT_BATCH:'Chờ lượt tiếp theo',COMPLETED:'Hoàn tất'})[state.phase];
-  if(state.people.length)el.summary.innerHTML=`<span class="tiny-dot"></span><span><b>${money(state.people.length)}</b> nhân viên hợp lệ${state.people.length<totalWinners?' • chưa đủ 44':''}<br><small>${escapeHtml(state.source)} • ${escapeHtml(state.sheet)}</small></span>`;
+  if(state.people.length)el.summary.innerHTML=`<span class="tiny-dot"></span><span><b>${money(state.people.length)}</b> nhân viên hợp lệ${state.people.length<totalWinners?' • cần '+totalWinners+' người':''}<br><small>${escapeHtml(state.source)} • ${escapeHtml(state.sheet)}</small></span>`;
   else el.summary.innerHTML='<span class="tiny-dot"></span><span>Chưa có dữ liệu nhân viên</span>';
 }
 function renderStage(){
+  window.dispatchEvent?.(new CustomEvent('lucky-draw-session-state'));
   renderPrizes();updateStatus();lockData();renderEventControls();
   const tier=currentTier(),b=currentBatch();
   $('#stageCard').classList.toggle('is-complete',!tier);
@@ -1428,26 +1492,27 @@ function renderStage(){
     el.draw.disabled=state.recoveryBlocked;el.drawText.textContent=nextBatchLabel();return;
   }
   updateTimer(DRAW_MS);el.timerSub.textContent='CHỜ BẮT ĐẦU';el.reel.textContent='✦ ✦ ✦';
-  el.draw.disabled=!canStart();el.drawText.textContent=canStart()?'BẮT ĐẦU QUAY • 10 GIÂY':state.recoveryBlocked?'CẦN KIỂM TRA PHIÊN':'NHẬP DANH SÁCH ĐỂ BẮT ĐẦU';el.hint.textContent='';
+  el.draw.disabled=!canStart();el.drawText.textContent=canStart()?'BẮT ĐẦU QUAY • '+(DRAW_MS/1000)+' GIÂY':state.recoveryBlocked?'CẦN KIỂM TRA PHIÊN':'NHẬP DANH SÁCH ĐỂ BẮT ĐẦU';el.hint.textContent='';
 }
 
 function discardDrawSession(){
   clearInterval(state.tickInterval);stopMusic();stopCountdown();state.tickInterval=null;
-  Object.assign(state,BatchEngine.create(),{source:'',sheet:'',fingerprint:'',invalid:0,duplicated:0,recoveryBlocked:false});
+  Object.assign(state,BatchEngine.create(state.drawConfig),{source:'',sheet:'',fingerprint:'',invalid:0,duplicated:0,recoveryBlocked:false});
   recoveryBackup=null;state.awarded=new Set();state.eligible=[];sessionFrozenConfiguration=null;$('#legacySessionBtn').classList.add('hidden');el.reveal.classList.add('hidden');el.shell.classList.remove('revealing');
   el.resultHeading.textContent='Danh sách may mắn';
 }
 
-async function loadCustomers(rows,source,sheetName){
+async function loadCustomers(rows,source,sheetName,{demo=false}={}){
   if(!accessAllowed())return false;
   const importingUid=window.LuckyDrawAccess.snapshot().uid;
   if(state.running){toast('Đang quay thưởng. Hãy chờ lượt hiện tại kết thúc.', 'error');return false}
   if(catalogBlocked){toast('Danh mục sự kiện cần kiểm tra trước khi nhập dữ liệu.','error');return false}
   if(state.recoveryBlocked){toast('Hãy xuất phiên cũ hoặc kiểm tra dữ liệu trước khi xóa phiên.','error');return false}
   const parsed=parseCustomers(rows); // Validate before replacing the current session.
+  if(parsed.people.length>BatchEngine.LIMITS.participants){toast('Danh sách vượt giới hạn tài nguyên '+BatchEngine.LIMITS.participants+' người.','error');return false;}
   if(state.completed.length && !window.confirm('Danh sách mới sẽ thay thế phiên quay và toàn bộ kết quả hiện tại. Hãy xuất Excel kết quả trước khi tiếp tục. Bạn có muốn tạo phiên mới không?'))return false;
   discardDrawSession();
-  state.people=parsed.people;state.source=source;state.sheet=sheetName;state.invalid=parsed.invalid;state.duplicated=parsed.duplicate;
+  state.people=parsed.people;state.demo=demo;state.source=source;state.sheet=sheetName;state.invalid=parsed.invalid;state.duplicated=parsed.duplicate;
   state.fingerprint='đang tính…';renderStage();
   const hash=await fingerprint(parsed.people.map(p=>p.id));
   if(!accessAllowed()||window.LuckyDrawAccess.snapshot().uid!==importingUid)return false;
@@ -1457,8 +1522,8 @@ async function loadCustomers(rows,source,sheetName){
   el.report.classList.remove('hidden');
   const messages=[`Đã nạp ${money(parsed.people.length)} nhân viên hợp lệ.`,parsed.duplicate?`Bỏ ${parsed.duplicate} dòng trùng định danh.`:'',parsed.invalid?`Bỏ ${parsed.invalid} dòng dữ liệu không hợp lệ.`:'',parsed.errors.slice(0,3).join('\n')].filter(Boolean);
   el.report.textContent=messages.join('\n');
-  if(parsed.people.length<totalWinners)toast('Cần ít nhất 44 nhân viên hợp lệ để quay.', 'error');
-  else toast(`Sẵn sàng: ${money(parsed.people.length)} nhân viên, 44 giải thưởng.`, 'success');
+  if(parsed.people.length<totalWinners)toast('Cần ít nhất '+totalWinners+' nhân viên hợp lệ để quay.', 'error');
+  else toast(`Sẵn sàng: ${money(parsed.people.length)} nhân viên, ${totalWinners} giải thưởng.`, 'success');
   return true;
 }
 async function loadFile(file){
@@ -1479,7 +1544,7 @@ function loadDemo(){
   const first=['Nguyễn','Trần','Lê','Phạm','Hoàng','Võ','Đặng','Bùi','Đỗ','Phan'];const middle=['Văn','Thị','Minh','Quốc','Gia','Thanh'];const last=['An','Bình','Chi','Dũng','Hà','Huy','Khánh','Linh','Minh','Ngọc','Phúc','Trang'];
   const departments=['Kỹ thuật','Kinh doanh','Nhân sự','Kế toán','Marketing','Vận hành'];
   for(let i=1;i<=120;i++)demo.push(['NV'+String(i).padStart(4,'0'),first[i%10]+' '+middle[i%6]+' '+last[i%12],departments[i%6],'']);
-  loadCustomers(demo,'DANH SÁCH NHÂN VIÊN DEMO','NhanVien');
+  loadCustomers(demo,'DANH SÁCH NHÂN VIÊN DEMO','NhanVien',{demo:true});
 }
 function drawTick(){
   if(!accessAllowed())return false;
@@ -1497,6 +1562,7 @@ function drawTick(){
 function startRound(){
   if(!canStart())return;
   try{
+    if(!state.locked)syncRuntimeDraw(BatchEngine.fromPrizes(PRIZES.map(({key,name,count,batchSize,amount,durationMs})=>({key,name,count,batchSize,amount,durationMs:durationMs||BatchEngine.DRAW_MS}))));
     const tier=currentTier();
     if(!BatchEngine.begin(state,tier.amount,persistState))return;
     state.eligible=BatchEngine.eligible(state);state.deadline=performance.now()+Math.max(0,state.roundEndsAt-Date.now());
@@ -1544,6 +1610,9 @@ function winnerCards(winners,gold){
   return winners.map((p,i)=>`<article class="winner-card ${gold?'gold':''} ${winners.length>15?'compact':''}" style="animation-delay:${Math.min(i,10)*45}ms"><div class="winner-id">${escapeHtml(displayCode(p))}</div><div class="winner-name">${escapeHtml(maskName(p.name))}</div></article>`).join('');
 }
 function renderResults(){
+  const confirmed=state.completed.filter(r=>!r.simulated).reduce((n,r)=>n+r.winners.length,0);
+  $('#handoverBtn').disabled=!confirmed;
+  $('#handoverHelp').textContent=confirmed?'Có '+confirmed+' người trúng đã xác nhận. File Excel chỉ lưu trên máy này.':'Chỉ xuất người trúng đã xác nhận; không xuất kết quả mô phỏng.';
   const complete=state.completed;
   if(!complete.length){el.resultPanel.className='results-panel';el.resultPanel.innerHTML='<div class="empty-results"><div class="empty-symbol">✧</div><strong>Chưa có kết quả</strong></div>';return}
   const current=complete[complete.length-1],p=PRIZES.find(p=>p.key===current.tierKey);
@@ -1572,7 +1641,7 @@ function auditPayload(){
   return {
     app:'Lucky Draw Event Platform — offline',version:'2.6.0',eventId:activeEvent.id,presetId:activeEvent.presetId,appearance:{...activeEvent.appearance},configurationSource:sharedMode,configurationPublication:(sessionFrozenConfiguration||appliedConfiguration)?.publication||null,eventName:el.name.value.trim(),createdAt:state.startedAt||nowIso(),exportedAt:nowIso(),
     dataSource:{name:state.source,sheet:state.sheet,uniqueCount:state.people.length,excludedInvalid:state.invalid,excludedDuplicates:state.duplicated,sha256OfSortedIdentifiers:state.fingerprint},
-    rules:{configurationId:BatchEngine.CONFIG_ID,method:'window.crypto.getRandomValues() + rejection sampling + partial Fisher-Yates; without replacement',drawDurationSeconds:DRAW_MS/1000,drawOrder:PRIZES.map(p=>p.name),repeatWinner:false,totalBatches:BATCHES.length,totalWinners,totalPrizeValueVND:totalBudget(),
+    rules:{configurationId:BatchEngine.CONFIG_ID,method:'window.crypto.getRandomValues() + rejection sampling + partial Fisher-Yates; without replacement',drawDurationSeconds:state.drawConfig.prizes.every(p=>p.durationMs===state.drawConfig.prizes[0].durationMs)?state.drawConfig.prizes[0].durationMs/1000:null,drawDurations:state.drawConfig.prizes.map(p=>({key:p.key,seconds:p.durationMs/1000})),drawOrder:PRIZES.map(p=>p.name),repeatWinner:false,totalBatches:BATCHES.length,totalWinners,totalPrizeValueVND:totalBudget(),
       note:'Log kỹ thuật phía trình duyệt, không phải biên bản có chữ ký số và không tự chứng minh được tính toàn vẹn chống sửa đổi.'},
     rounds:state.completed.map((round,i)=>({order:i+1,batchNumber:round.batchNumber,batchesInTier:round.batchTotal,prize:PRIZES.find(p=>p.key===round.tierKey).name,quantity:round.winners.length,amountPerWinnerVND:round.amount,eligibleBeforeDraw:round.poolSize,startedAt:round.startedAt,revealedAt:round.finishedAt,winners:round.winners.map((w,index)=>({position:index+1,batchNumber:round.batchNumber,batchOrder:round.batchIndex+1,prizeAmountVND:round.amount,cccd:w.cccd||'',name:w.name,employeeCode:w.code||'',department:w.department||'',identifier:w.id}))}))
   };
@@ -1640,6 +1709,7 @@ function bind(){
   listen(el.demo,'click',loadDemo);
   listen(el.template,'click',async()=>{try{await ExcelLocal.makeXlsx([['Mã nhân viên','Họ tên','Phòng ban','Số CCCD'],['NV0001','Nguyễn Văn An','Kỹ thuật',''],['NV0002','Trần Thị Bình','Nhân sự','']], 'mau-danh-sach-nhan-vien.xlsx','NhanVien');toast('Đã tải Excel mẫu. Ưu tiên mã nhân viên; CCCD có thể bỏ trống.','success')}catch(err){toast(err.message,'error')}});
   listen(el.draw,'click',()=>{if(state.roundFinished)nextRound();else startRound()});
+  listen($('#handoverBtn'),'click',async()=>{try{const event=(sessionFrozenConfiguration||configurationForCurrent()).event;const report=AwardHandover.build(BatchEngine.snapshot(state),event);const uid=window.LuckyDrawAccess.snapshot().uid;await ExcelLocal.makeWorkbook(report.sheets,report.filename,{beforeDownload:async()=>await window.LuckyDrawAccess.verify()&&window.LuckyDrawAccess.canOperate()&&window.LuckyDrawAccess.snapshot().uid===uid});toast('Đã xuất danh sách trao thưởng.','success')}catch(e){toast(e.message,'error')}});
   listen(el.export,'click',async()=>{if(!guard())return;try{await ExcelLocal.makeXlsx(resultRows(), 'ket-qua-'+exportStem()+'.xlsx','KetQuaTrungThuong');toast('Đã xuất kết quả Excel. Nếu có CCCD, hãy lưu file an toàn.','success')}catch(err){toast(err.message,'error')}});
   listen(el.audit,'click',()=>{if(!guard())return;downloadJson(auditPayload(),'nhat-ky-'+exportStem()+'.json');toast('Đã xuất nhật ký. File có thể chứa CCCD đầy đủ.','success')});
   listen(el.reset,'click',reset);
@@ -1664,7 +1734,13 @@ function bind(){
   window.addEventListener('beforeunload',e=>{if(state.running){e.preventDefault();e.returnValue=''}});
 }
 
-function applySettingsPrizeLabels(config){for(const p of config.draw.prizes){const tier=PRIZES.find(t=>t.key===p.key);if(tier){tier.name=p.name;tier.stage=p.name.toLocaleUpperCase('vi-VN')}}}
+function syncRuntimeDraw(draw){
+  state.drawConfig=BatchEngine.create(BatchEngine.migrateDraw(draw)).drawConfig;BATCHES=BatchEngine.schedule(state.drawConfig);
+  const icons={encouragement:'✧',fourth:'✦',third:'★',second:'◆',first:'♛'};
+  PRIZES.splice(0,PRIZES.length,...state.drawConfig.prizes.map(p=>({...p,stage:p.name.toLocaleUpperCase('vi-VN'),icon:icons[p.key]||'✦'})));
+  totalWinners=BatchEngine.totalSlots(state.drawConfig);currentBatch();
+}
+function applySettingsPrizeLabels(config){syncRuntimeDraw(config.draw)}
 function acceptEventSettings(settings,{preview=false,revision=1,updatedAt='2000-01-01T00:00:00.000Z'}={}){
   if(!accessAllowed()||preview&&!window.LuckyDrawAccess.canAdmin())throw Error('Chưa được cấp quyền.');
   const publicSettings=EventSettings.validate(settings);
