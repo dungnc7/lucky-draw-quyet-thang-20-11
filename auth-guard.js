@@ -72,11 +72,11 @@ const $=id=>document.getElementById(id),root=$('authRoot'),shell=$('appShell');
 const logo=document.querySelector('.brand-logo')?.getAttribute('src')||'';
 root.innerHTML=`<main class="auth-card" aria-labelledby="authTitle"><div class="auth-brand"><img id="authLogo" alt="Logo Quyết Thắng"><span>QUYẾT THẮNG</span></div><p class="auth-eyebrow">EVENT PLATFORM · V2.6</p><h1 id="authTitle">LUCKY DRAW</h1><p class="auth-subtitle">Hệ thống quay thưởng Quyết Thắng</p>
  <div id="authLoading" role="status" aria-live="polite"><span class="auth-spinner"></span>Đang xác minh đăng nhập…</div>
- <form id="authLogin" hidden><label for="authEmail">Email</label><input id="authEmail" type="email" autocomplete="username" required maxlength="254" placeholder="email@congty.vn"><label for="authPassword">Mật khẩu</label><div class="auth-password"><input id="authPassword" type="password" autocomplete="current-password" required><button id="authShow" type="button" aria-label="Hiện mật khẩu" aria-pressed="false">Hiện</button></div><div class="auth-options"><label class="auth-check"><input id="authRemember" type="checkbox">Ghi nhớ đăng nhập</label><button id="authForgot" class="auth-text" type="button">Quên mật khẩu?</button></div><button id="authSubmit" class="auth-primary" type="submit">Đăng nhập</button><p class="auth-help">Tài khoản do đơn vị cấp. Liên hệ quản trị viên nếu bạn chưa được cấp quyền.</p></form>
+ <form id="authLogin" hidden><label for="authEmail">Email</label><input id="authEmail" type="email" autocomplete="username" required maxlength="254" placeholder="email@congty.vn"><label for="authPassword">Mật khẩu</label><div class="auth-password"><input id="authPassword" type="password" autocomplete="current-password" required><button id="authShow" type="button" aria-label="Hiện mật khẩu" aria-pressed="false">Hiện</button></div><div class="auth-options"><label class="auth-check"><input id="authRemember" type="checkbox">Ghi nhớ đăng nhập</label><button id="authForgot" class="auth-text" type="button">Quên mật khẩu?</button></div><button id="authSubmit" class="auth-primary" type="submit">Đăng nhập</button></form>
  <form id="authReset" hidden><h2>Khôi phục mật khẩu</h2><label for="authResetEmail">Email</label><input id="authResetEmail" type="email" autocomplete="username" required maxlength="254"><button id="authResetSubmit" class="auth-primary" type="submit">Gửi hướng dẫn</button><button id="authBack" class="auth-text" type="button">Quay lại đăng nhập</button></form>
  <div id="authDenied" hidden><h2>Chưa được cấp quyền truy cập</h2><p>Tài khoản này chưa được đơn vị cấp quyền Admin hoặc Nhân viên vận hành. Vui lòng liên hệ quản trị viên.</p><button id="authDeniedLogout" class="auth-primary" type="button">Đăng xuất</button></div>
  <div id="authError" hidden><h2>Chưa xác minh được quyền truy cập</h2><p>Kiểm tra kết nối rồi thử lại. Phiên quay đã lưu được giữ an toàn trên máy.</p><button id="authRetry" class="auth-primary" type="button">Thử lại</button><button id="authErrorLogout" class="auth-text" type="button">Đăng xuất</button></div>
- <p id="authMessage" class="auth-message" role="status" aria-live="polite"></p><footer>Nền tảng nội bộ · Kết nối an toàn qua Firebase</footer></main>`;
+ <p id="authMessage" class="auth-message" role="status" aria-live="polite"></p></main>`;
 $('authLogo').src=logo;
 const logoutDialog=document.createElement('dialog');logoutDialog.id='logoutDialog';logoutDialog.className='auth-dialog';
 logoutDialog.innerHTML='<h2>Đăng xuất khỏi phiên quay?</h2><p id="logoutExplanation"></p><div><button id="logoutCancel" type="button">Ở lại</button><button id="logoutConfirm" type="button">Đăng xuất</button></div>';
@@ -107,7 +107,7 @@ $('authBack').addEventListener('click',()=>{resetView=false;$('authMessage').tex
 $('authLogin').addEventListener('submit',async e=>{
  e.preventDefault();if(submitting||!service)return;const email=$('authEmail').value.trim(),password=$('authPassword').value,remember=$('authRemember').checked;submitting=true;$('authMessage').textContent='';paint();
  try{const {authMod,auth}=service;await authMod.setPersistence(auth,remember?authMod.browserLocalPersistence:authMod.browserSessionPersistence);await authMod.signInWithEmailAndPassword(auth,email,password);}
- catch{$('authMessage').textContent='Không thể đăng nhập. Kiểm tra thông tin tài khoản và kết nối, hoặc liên hệ quản trị viên.';}
+ catch{$('authMessage').textContent='Không thể đăng nhập.';}
  finally{$('authPassword').value='';submitting=false;paint();}
 });
 $('authReset').addEventListener('submit',async e=>{
