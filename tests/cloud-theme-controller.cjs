@@ -1,46 +1,24 @@
 'use strict';
-const {test}=require('node:test');
-const assert=require('node:assert/strict');
-const fs=require('node:fs'),vm=require('node:vm');
-async function boot({configured=true,protocol='https:'}={}){
- const elements=new Map(),events=[],writes=[];
- const el=id=>{if(!elements.has(id))elements.set(id,{value:'',textContent:'',hidden:false,disabled:false,listeners:{},addEventListener(n,fn){this.listeners[n]=fn},replaceChildren(...children){this.children=children},insertAdjacentHTML(){}});return elements.get(id)};
- let snapshot,error,authChange;const auth={currentUser:null};let role=true;
- const firestore={getFirestore:()=>({}),doc:(_db,...parts)=>parts.join('/'),getDoc:async()=>({exists:()=>true,data:()=>({enabled:role})}),serverTimestamp:()=>({serverTimestamp:true}),onSnapshot:(_ref,_options,cb,err)=>{snapshot=cb;error=err;return()=>{}},setDoc:async(ref,data)=>writes.push({ref,data})};
- const authLib={getAuth:()=>auth,browserSessionPersistence:'tab-only',setPersistence:async()=>{},onAuthStateChanged:(_a,cb)=>{authChange=cb},signInWithEmailAndPassword:async()=>{auth.currentUser={uid:'admin',email:'synthetic@example.invalid'};await authChange(auth.currentUser)},signOut:async()=>{auth.currentUser=null;await authChange(null)}};
- const context={console,location:{protocol},Intl,Option:class{constructor(name,id){this.text=name;this.value=id}},CustomEvent:class{constructor(type,o){this.type=type;this.detail=o.detail}},document:{querySelector:()=>el('anchor'),getElementById:el},dispatchEvent:e=>events.push(e),LUCKYDRAW_CLOUD_CONFIG:configured?{apiKey:'public-test',authDomain:'public.example.invalid',projectId:'demo-lucky-theme',appId:'public-test'}:{},loadSdk:async name=>name==='app'?{initializeApp:()=>({})}:name==='firestore'?firestore:authLib};context.window=context;
- vm.createContext(context);
- const html=fs.readFileSync('index.html','utf8');vm.runInContext(html.match(/<script id="event-platform">([\s\S]*?)<\/script>/)[1],context);
- const source=fs.readFileSync('cloud-theme-sync.js','utf8').replace("import(url+'firebase-app.js')","loadSdk('app')").replace("import(url+'firebase-firestore.js')","loadSdk('firestore')").replace("import(url+'firebase-auth.js')","loadSdk('auth')");
- await vm.runInContext(source,context);
- return {el,events,writes,context,auth,async login(enabled=true){role=enabled;auth.currentUser={uid:'admin',email:'synthetic@example.invalid'};await authChange(auth.currentUser)},async logout(){auth.currentUser=null;await authChange(null)},snapshot(data,{cache=false,pending=false}={}){snapshot({metadata:{hasPendingWrites:pending,fromCache:cache},exists:()=>data!==null,data:()=>data})},error(e){error(e)},async fire(id,type){return el(id).listeners[type]?.({preventDefault(){}})}};
+const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const legacy=JSON.parse(fs.readFileSync('config/published.json','utf8'));
+async function fixture(){
+ const elements=new Map(),store=new Map(),windowEvents={},applied=[];let snap,authChange,server=null,writeCount=0,allow=true,offline=false,confirmGate=null;
+ const el=id=>{if(!elements.has(id))elements.set(id,{id,value:'',checked:false,hidden:false,disabled:false,readOnly:false,tagName:'INPUT',type:'text',textContent:'',dataset:{},style:{setProperty(){}},events:{},addEventListener(n,fn){this.events[n]=fn},replaceChildren(...children){this.children=children},querySelectorAll(){return [...elements.values()].filter(e=>e.field)},set innerHTML(text){for(const m of text.matchAll(/<(input|textarea|select|button|i|p|div|strong)\b([^>]*?)\bid="([^"]+)"([^>]*)>/g)){const e=el(m[3]);e.tagName=m[1].toUpperCase();e.type=(m[2]+m[4]).match(/type="([^"]+)"/)?.[1]||'text';e.readOnly=(m[2]+m[4]).includes('readonly');e.field=/^settings(Preset|Name|Organization|Date|Subtitle|Occasion|BrandLabel|LogoMode|LogoUrl|CompletedTitle|CompletedMessage|Theme|Background|Color|PrizeName-|PrizeAmount-|Music$|Countdown$|Celebration$)/.test(e.id);}},get innerHTML(){return ''}});return elements.get(id)};
+ const auth={currentUser:null};const timestamp=()=>({toDate:()=>new Date('2026-11-21T00:00:00Z')});
+ const firestore={getFirestore:()=>({}),doc:(_db,...parts)=>parts.join('/'),serverTimestamp:timestamp,getDocFromServer:async ref=>{if(offline)throw Error('offline');if(ref.startsWith('admins/'))return{exists:()=>true,data:()=>({enabled:allow})};if(confirmGate)await confirmGate;return{exists:()=>!!server,data:()=>server};},onSnapshot:(ref,_opt,cb)=>{if(ref==='sharedEvent/live')snap=cb;return()=>{};},runTransaction:async(_db,fn)=>{if(offline)throw Error('offline');return fn({get:async()=>({exists:()=>!!server,data:()=>server}),set:(_r,d)=>{server=d;writeCount++;}})}};
+ const authLib={getAuth:()=>auth,browserSessionPersistence:'session',setPersistence:async()=>{},onAuthStateChanged:(_a,cb)=>authChange=cb,signOut:async()=>{auth.currentUser=null;await authChange(null)},signInWithEmailAndPassword:async()=>{auth.currentUser={uid:'admin'};await authChange(auth.currentUser)}};
+ const c={console,Intl,Date,TextEncoder,Option:class{constructor(label,value){this.label=label;this.value=value}},crypto:require('node:crypto').webcrypto,navigator:{onLine:true},location:{protocol:'https:',href:'https://example.invalid/app/'},URL,localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v),removeItem:k=>store.delete(k)},document:{getElementById:el},confirm:()=>true,addEventListener:(type,fn)=>windowEvents[type]=fn,LUCKYDRAW_CLOUD_CONFIG:{projectId:'demo'},LuckyDrawSettingsBridge:{apply:(s,opts)=>{applied.push({s,opts})},locked:()=>false,ready(){}},loadSdk:async type=>type==='app'?{initializeApp:()=>({})}:type==='firestore'?firestore:authLib,fetch:async()=>({ok:true,headers:{get:()=> 'application/json'},text:async()=>JSON.stringify(legacy)})};c.window=c;vm.createContext(c);
+ const html=fs.readFileSync('index.html','utf8');for(const id of ['batch-engine','event-platform','shared-configuration','event-settings'])vm.runInContext(html.match(new RegExp(`<script id="${id}">([\\s\\S]*?)<\\/script>`))[1],c);
+ const source=fs.readFileSync('cloud-theme-sync.js','utf8').replace("import(url+'firebase-app.js')","loadSdk('app')").replace("import(url+'firebase-firestore.js')","loadSdk('firestore')").replace("import(url+'firebase-auth.js')","loadSdk('auth')");await vm.runInContext(source,c);
+ return{el,c,applied,store,async login(admin=true){allow=admin;auth.currentUser={uid:'admin'};await authChange(auth.currentUser)},emit(rev=1,{cache=false,pending=false,title}={}){const settings=JSON.parse(JSON.stringify(c.EventSettings.migrate(legacy)));if(title)settings.event.content.title=title;server={schemaVersion:2,revision:rev,updatedAt:timestamp(),settings};snap({metadata:{fromCache:cache,hasPendingWrites:pending},exists:()=>true,data:()=>server});},async fire(id,event='click'){return el(id).events[event]?.({preventDefault(){}})},get writes(){return writeCount},set offline(v){offline=v;windowEvents[v?'offline':'online']?.()},gate(p){confirmGate=p}};
 }
-const remote=id=>({schemaVersion:1,themeId:id,updatedAt:{toDate:()=>new Date('2026-11-21T00:00:00Z')}});
-test('missing config and offline file keep the existing raffle operational without cloud saving',async()=>{
- for(const options of [{configured:false},{protocol:'file:'}]){const f=await boot(options);assert.equal(f.el('cloudThemeSave').disabled,true);assert.equal(f.events.length,0)}
+test('read-only viewers receive settings without login and cannot save',async()=>{const f=await fixture();f.emit();assert.equal(f.el('settingsStatus').textContent,'Đã đồng bộ');assert.equal(f.el('settingsSave').disabled,true);assert.equal(f.el('settingsName').disabled,true);await f.fire('settingsSave');assert.equal(f.writes,0);});
+test('Admin edits preview locally; save waits for server confirmation before synced',async()=>{
+ const f=await fixture();f.emit();await f.login();f.el('settingsName').value='Chương trình mới';await f.fire('settingsName','input');assert.equal(f.el('settingsStatus').textContent,'Có thay đổi chưa lưu');assert.equal(f.writes,0);assert.equal(f.applied.at(-1).opts.preview,true);
+ let release;f.gate(new Promise(r=>release=r));const saving=f.fire('settingsSave');await new Promise(r=>setImmediate(r));assert.equal(f.el('settingsStatus').textContent,'Đang lưu...');release();await saving;assert.equal(f.el('settingsStatus').textContent,'Đã đồng bộ');assert.equal(f.writes,1);assert.equal(f.el('settingsName').value,'Chương trình mới');
 });
-test('all seven themes are selectable; missing shared document uses corporate default',async()=>{
- const f=await boot();assert.equal(f.el('cloudThemeSelect').children.length,7);f.snapshot(null);assert.equal(f.events.at(-1).detail.themeId,'quyet-thang-corporate');
-});
-test('public realtime update changes the theme only and never writes',async()=>{
- const f=await boot();f.snapshot(remote('ocean'));assert.equal(f.events.at(-1).detail.themeId,'ocean');assert.equal(f.writes.length,0);assert.equal(f.el('cloudThemeSave').disabled,true);
-});
-test('preview remains local until an authorized admin explicitly clicks apply',async()=>{
- const f=await boot();f.snapshot(remote('quyet-thang-corporate'));f.el('cloudThemeSelect').value='lotus';await f.fire('cloudThemeSelect','change');assert.equal(f.writes.length,0);
- await f.login();await f.fire('cloudThemeSave','click');assert.equal(f.writes.length,1);assert.equal(f.writes[0].ref,'sharedTheme/live');assert.deepEqual(Object.keys(f.writes[0].data).sort(),['schemaVersion','themeId','updatedAt']);assert.equal(f.writes[0].data.themeId,'lotus');
-});
-test('non-admin and logged-out users cannot invoke the controller save path',async()=>{
- const f=await boot();f.snapshot(remote('ocean'));f.el('cloudThemeSelect').value='lotus';await f.login(false);await f.fire('cloudThemeSave','click');await f.logout();await f.fire('cloudThemeSave','click');assert.equal(f.writes.length,0);
-});
-test('cached/pending snapshots never confirm a public save; invalid remote data fails closed',async()=>{
- const f=await boot();f.snapshot(remote('lotus'),{cache:true});assert.equal(f.events.length,0);assert.equal(f.el('cloudThemeSave').disabled,true);
- f.snapshot(remote('lotus'),{pending:true});assert.equal(f.events.length,0);
- f.snapshot(remote('unknown'));assert.equal(f.events.length,0);assert.equal(f.el('cloudThemeSave').disabled,true);
-});
-test('listener failures disable publication and preserve the last received theme',async()=>{
- const f=await boot();f.snapshot(remote('emerald'));f.error({code:'permission-denied'});assert.equal(f.events.at(-1).detail.themeId,'emerald');assert.equal(f.el('cloudThemeSave').disabled,true);
-});
+test('remote updates preserve an unsaved form and block conflicting saves',async()=>{const f=await fixture();f.emit();await f.login();f.el('settingsName').value='Bản sửa riêng';await f.fire('settingsName','input');f.emit(2,{title:'Admin khác'});assert.equal(f.el('settingsName').value,'Bản sửa riêng');assert.equal(f.el('settingsSave').disabled,true);assert.match(f.el('settingsNotice').textContent,/Admin khác/);await f.fire('settingsSave');assert.equal(f.writes,0);await f.fire('settingsDiscard');assert.equal(f.el('settingsName').value,'Admin khác');});
+test('offline/reconnect retains changes; no write is queued while offline',async()=>{const f=await fixture();f.emit();await f.login();f.el('settingsName').value='Sửa khi offline';await f.fire('settingsName','input');f.offline=true;await f.fire('settingsSave');assert.equal(f.writes,0);assert.equal(f.el('settingsStatus').textContent,'Không thể lưu — kiểm tra kết nối');f.offline=false;f.emit(1);assert.equal(f.el('settingsName').value,'Sửa khi offline');assert.equal(f.el('settingsStatus').textContent,'Có thay đổi chưa lưu');});
+test('invalid input and lost Admin role refuse save without discarding edits',async()=>{const f=await fixture();f.emit();await f.login();f.el('settingsName').value='';await f.fire('settingsName','input');await f.fire('settingsSave');assert.equal(f.writes,0);f.el('settingsName').value='Giữ bản sửa';await f.fire('settingsName','input');await f.login(false);await f.fire('settingsSave');assert.equal(f.writes,0);assert.equal(f.el('settingsName').value,'Giữ bản sửa');});
 
-test('extra fields or missing server timestamps are refused before displaying cloud data',async()=>{
- for(const data of [{...remote('lotus'),employees:['SYNTHETIC']},{schemaVersion:1,themeId:'lotus'}, {...remote('lotus'),updatedAt:{toDate:()=>new Date('invalid')}}]){const f=await boot();f.snapshot(data);assert.equal(f.events.length,0);assert.equal(f.el('cloudThemeSave').disabled,true)}
-});
+test('invalid unsaved form survives a newer remote revision until explicit discard',async()=>{const f=await fixture();f.emit();await f.login();f.el('settingsName').value='';await f.fire('settingsName','input');f.emit(2,{title:'Remote update'});assert.equal(f.el('settingsName').value,'');assert.equal(f.el('settingsSave').disabled,true);await f.fire('settingsDiscard');assert.equal(f.el('settingsName').value,'Remote update');});

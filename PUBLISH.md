@@ -1,27 +1,13 @@
-# GitHub Pages — Lucky Draw Quyết Thắng v2.6
+# Release review - Lucky Draw v2.6
 
 Repository: https://github.com/dungnc7/lucky-draw-quyet-thang-20-11
 
-Website: https://dungnc7.github.io/lucky-draw-quyet-thang-20-11/
+Current Pages URL: https://dungnc7.github.io/lucky-draw-quyet-thang-20-11/
 
-For configuration-only changes use the authenticated [shared publication workflow](docs/SHARED_CONFIGURATION.md); review all public text and verify both JSON and HTML after deployment. Never put credentials in the browser.
+This request ends at a Pull Request with screenshots and tests. **Do not merge, deploy Firestore rules, initialize sharedEvent/live or deploy Pages before owner review.**
 
-Keep repository **PUBLIC** on the current GitHub plan. Changing it to private previously removed Pages; a private repo needs a supported paid plan or different hosting.
+After explicit release approval, follow the ordered migration in [SIMPLIFIED_SETTINGS.md](docs/SIMPLIFIED_SETTINGS.md): reviewed rules first, approved client second, explicit first Admin Save third. JSON archives remain immutable migration inputs. Configuration-only edits then use the Firebase Admin screen, not GitHub Actions.
 
-Pages source: **Settings → Pages → Deploy from a branch → main → /(root)**. Keep `.nojekyll`; no build dependencies are required.
+Keep the repository PUBLIC and existing Pages source main / root for the current plan. Keep .nojekyll. No build output or client secrets are required. Run npm test, Python archive tests, preflight and demo-only Firestore rules tests before committing; inspect every staged path. No real participants, results, screenshots, runtime dumps or credentials belong in Git.
 
-Before commit:
-
-```sh
-python3 scripts/preflight.py
-node --test tests/test-v24.cjs
-python3 -m unittest discover -s tests -p 'test_publication.py'
-git diff --check
-git diff --stat
-```
-
-Inspect every staged path. Only publish the source allowlist; never include Excel/CSV rosters, results, audit JSON, credentials, screenshots containing participant data or runtime session dumps. Preserve existing history; no force pushes.
-
-After push, require the Pages workflow for that SHA to succeed. Check the public URL **without authentication**, HTTP 200 and content hash against reviewed `index.html`. Test logo, new theme and a demo batch in a browser. A successful push alone is not proof of publication.
-
-Save `index.html` plus an explicitly downloaded published configuration backup for offline use; import and apply that backup locally. Check actual projector, fullscreen permissions, speakers and sound volume on the event laptop before live use. Save local result exports after the event.
+For an approved release, wait for successful deployment of the exact reviewed SHA. Verify the public endpoint without authentication, HTML hash, logo, Admin save and independent realtime viewer, unauthorized denial and a synthetic 10-second batch. A push or green CI alone is not evidence that production works. Check projector, speakers and local result exports on the actual event laptop separately.

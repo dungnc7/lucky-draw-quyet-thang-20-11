@@ -1,3 +1,5 @@
+> Current candidate: [Simplified Firebase settings](SIMPLIFIED_SETTINGS.md). The historical JSON publication/theme-only workflow below is superseded for new releases. This PR requires owner review before any merge or production deployment.
+
 # v2.6 architecture
 
 Baseline: v2.3 commit `56758e5b2ba66f7517611b0d81280608a3bd709e`. The existing app is extended; the importer, writer, embedded company logo and synthesized music are preserved.

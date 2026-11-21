@@ -5,10 +5,10 @@ const path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const context=vm.createContext({TextEncoder,TextDecoder,Date});context.window=context;
-for(const id of ['batch-engine','event-platform','shared-configuration']){
+for(const id of ['batch-engine','event-platform','shared-configuration','event-settings']){
  const script=html.match(new RegExp(`<script id="${id}">([\\s\\S]*?)<\\/script>`));if(!script)throw Error('Missing bundled '+id);vm.runInContext(script[1],context);
 }
-module.exports={SharedConfiguration:context.SharedConfiguration,EventPlatform:context.EventPlatform,BatchEngine:context.BatchEngine};
+module.exports={SharedConfiguration:context.SharedConfiguration,EventPlatform:context.EventPlatform,BatchEngine:context.BatchEngine,EventSettings:context.EventSettings};
 if(require.main===module){
  try{
   const source=process.argv[2];if(fs.statSync(source).size>context.SharedConfiguration.MAX_BYTES)throw Error('Configuration exceeds 32 KiB');

@@ -5,16 +5,17 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const {webcrypto}=require('node:crypto');
 const html=fs.readFileSync(new URL('../index.html',`file://${__filename}`),'utf8');
-const scripts=[...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)].map(m=>m[1]);
+const scripts=[...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)].map(m=>m[1]).filter(s=>s.trim());
 function fixture(){
  let clock=1700000000000,interval=0;
  const storage=new Map(),els=new Map();
- function element(){const classes=new Set();return {events:{},appendChild(){},value:'',textContent:'',innerHTML:'',disabled:false,dataset:{},style:{setProperty(){}},classList:{add(...xs){xs.forEach(x=>classes.add(x))},remove(...xs){xs.forEach(x=>classes.delete(x))},contains(x){return classes.has(x)},toggle(x,v){if(v??!classes.has(x))classes.add(x);else classes.delete(x)}},setAttribute(k,v){this[k]=v},addEventListener(k,fn){this.events[k]=fn},matches(){return true},click(){},remove(){}}}
+ function element(){const classes=new Set();return {events:{},appendChild(){},value:'',textContent:'',innerHTML:'',disabled:false,dataset:{},style:{setProperty(){}},classList:{add(...xs){xs.forEach(x=>classes.add(x))},remove(...xs){xs.forEach(x=>classes.delete(x))},contains(x){return classes.has(x)},toggle(x,v){if(v??!classes.has(x))classes.add(x);else classes.delete(x)}},getAttribute(k){return this[k]||''},setAttribute(k,v){this[k]=v},addEventListener(k,fn){this.events[k]=fn},matches(){return true},click(){},remove(){}}}
  const el=id=>{if(!els.has(id))els.set(id,element());return els.get(id)};
- const context=vm.createContext({console,crypto:webcrypto,Uint32Array,Uint8Array,ArrayBuffer,Blob,TextEncoder,TextDecoder,Date:class extends Date{constructor(...args){super(...(args.length?args:[clock]))}static now(){return clock}},performance:{now:()=>clock},setInterval:()=>++interval,clearInterval(){},setTimeout:(fn,ms,...args)=>setTimeout(fn,0,...args),clearTimeout,URL:class extends URL{static createObjectURL(){return 'blob:test'}static revokeObjectURL(){}},AbortController,sessionStorage:{getItem:k=>storage.get(k)||null,setItem(k,v){storage.set(k,v)},removeItem:k=>storage.delete(k)},document:{querySelector:el,addEventListener(){},createElement:element,body:{appendChild(){}},documentElement:{}},confirm:()=>true,addEventListener(){}});
+ const context=vm.createContext({console,crypto:webcrypto,Uint32Array,Uint8Array,ArrayBuffer,Blob,TextEncoder,TextDecoder,Date:class extends Date{constructor(...args){super(...(args.length?args:[clock]))}static now(){return clock}},performance:{now:()=>clock},setInterval:()=>++interval,clearInterval(){},setTimeout:(fn,ms,...args)=>setTimeout(fn,0,...args),clearTimeout,URL:class extends URL{static createObjectURL(){return 'blob:test'}static revokeObjectURL(){}},AbortController,sessionStorage:{getItem:k=>storage.get(k)||null,setItem(k,v){storage.set(k,v)},removeItem:k=>storage.delete(k)},document:{querySelector:el,querySelectorAll:()=>[],addEventListener(){},createElement:element,body:{appendChild(){}},documentElement:{}},confirm:()=>true,addEventListener(){}});
  context.window=context;context.globalThis=context;
  vm.runInContext(scripts[0],context);vm.runInContext(scripts[1],context);vm.runInContext(scripts[2],context);vm.runInContext(scripts[3],context);vm.runInContext(scripts[4],context);
- vm.runInContext(scripts[5].replace(/\ninit\(\);/,`\nglobalThis.api={state,PRIZES,parseCustomers,parsePrizeAmount,loadCustomers,startRound,finishRound,nextRound,drawTick,restoreSession,persistState,canChangePrizes,changePrizeAmount,renderStage,showReveal,hideReveal,resultRows,auditPayload,bind,canStart,discardDrawSession,initEvents,changeEventTheme,selectPreset,switchEvent,createNewEvent,saveEventTitle,renderEventContent,renderEventControls,getEvent:()=>activeEvent,getCatalog:()=>catalog,configurationForCurrent,initializeSharedConfiguration,refreshPublishedConfiguration,receivePublication,applyPublicConfiguration,useLocalDraft,importConfigurationFile,applyPreviewConfiguration,loadSharedPointer,reset,getSharedState:()=>({mode:sharedMode,ready:configurationReady,applied:appliedConfiguration,latest:latestPublication,frozen:sessionFrozenConfiguration,message:sharedMessage})};`),context);
+ vm.runInContext(scripts[5],context);
+ vm.runInContext(scripts[6].replace(/\ninit\(\);/,`\nglobalThis.api={state,PRIZES,parseCustomers,parsePrizeAmount,loadCustomers,startRound,finishRound,nextRound,drawTick,restoreSession,persistState,canChangePrizes,changePrizeAmount,renderStage,showReveal,hideReveal,resultRows,auditPayload,bind,canStart,discardDrawSession,initEvents,changeEventTheme,selectPreset,switchEvent,createNewEvent,saveEventTitle,renderEventContent,renderEventControls,getEvent:()=>activeEvent,getCatalog:()=>catalog,configurationForCurrent,initializeSharedConfiguration,refreshPublishedConfiguration,receivePublication,applyPublicConfiguration,useLocalDraft,importConfigurationFile,applyPreviewConfiguration,loadSharedPointer,reset,getSharedState:()=>({mode:sharedMode,ready:configurationReady,applied:appliedConfiguration,latest:latestPublication,frozen:sessionFrozenConfiguration,message:sharedMessage})};`),context);
  el('#eventName').value='TEST — SYNTHETIC ONLY';
  return {context,S:context.SharedConfiguration,P:context.EventPlatform,E:context.BatchEngine,app:context.api,storage,el,advance:ms=>clock+=ms,now:()=>clock};
 }
@@ -312,4 +313,15 @@ test('cloud visual overrides change all seven themes without touching an active 
  }
  f.context.LUCKYDRAW_SHARED_THEME_OVERRIDE='invalid';f.app.renderEventControls();assert.equal(f.el('#appShell').dataset.theme,f.app.getEvent().appearance.themeId);
  f.advance(10000);f.app.drawTick();assert.equal(f.app.state.completed[0].winners.length,6);assert.equal(f.app.state.running,false);
+});
+
+test('full shared settings defer critical changes during a draw and apply them only after explicit session reset',async()=>{
+ const f=fixture();f.app.initEvents();await importPeople(f);f.app.startRound();
+ const pending=plain(f.app.state.pending),deadline=f.app.state.roundEndsAt,oldAmounts=plain(f.app.PRIZES.map(p=>p.amount));
+ const source=JSON.parse(fs.readFileSync(new URL('../config/published.json',`file://${__filename}`),'utf8'));
+ const settings=f.context.EventSettings.migrate(source);settings.event.appearance.themeId='emerald';settings.draw.prizes[0].name='Giải tri ân';settings.draw.prizes[0].amount=333000;
+ assert.equal(f.context.LuckyDrawSettingsBridge.apply(settings,{revision:3,updatedAt:'2026-11-21T00:00:00.000Z'}).deferred,true);
+ assert.deepEqual(plain(f.app.state.pending),pending);assert.equal(f.app.state.roundEndsAt,deadline);assert.deepEqual(plain(f.app.PRIZES.map(p=>p.amount)),oldAmounts);
+ assert.equal(f.el('#appShell').dataset.theme,'emerald');f.advance(10000);f.app.drawTick();assert.deepEqual(plain(f.app.state.completed[0].winners),pending);
+ f.context.ProgramSettingsActive=true;f.app.reset();assert.equal(f.app.PRIZES[0].amount,333000);assert.equal(f.app.PRIZES[0].name,'Giải tri ân');assert.equal(f.app.state.people.length,0);
 });
