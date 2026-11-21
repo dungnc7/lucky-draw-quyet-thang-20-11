@@ -300,3 +300,16 @@ test('shared: publication preparation enforces stale-base protection and monoton
 test('shared: switching to local draft while fetch is pending discards late remote response',async()=>{
  const f=fixture();f.app.initEvents();f.context.location={href:'https://example.test/'};let resolve;f.context.fetch=()=>new Promise(r=>{resolve=r});const request=f.app.initializeSharedConfiguration();assert.equal(f.app.useLocalDraft(),true);resolve(responseFor(publicConfig(f,1,{theme:'lotus'})));await request;assert.equal(f.app.getSharedState().mode,'draft');assert.equal(f.app.getEvent().appearance.themeId,'quyet-thang-corporate');
 });
+
+test('cloud visual overrides change all seven themes without touching an active draw or its stored snapshot',async()=>{
+ const f=fixture();f.app.initEvents();await importPeople(f);f.app.startRound();
+ const before=JSON.stringify(f.app.state),storage=JSON.stringify([...f.storage]),prizes=JSON.stringify(f.app.PRIZES),event=JSON.stringify(f.app.getEvent());
+ for(const theme of f.P.THEMES){
+  f.context.LUCKYDRAW_SHARED_THEME_OVERRIDE=theme.id;f.app.renderEventControls();
+  assert.equal(f.el('#appShell').dataset.theme,theme.id);
+  assert.equal(JSON.stringify(f.app.state),before);assert.equal(JSON.stringify([...f.storage]),storage);
+  assert.equal(JSON.stringify(f.app.PRIZES),prizes);assert.equal(JSON.stringify(f.app.getEvent()),event);
+ }
+ f.context.LUCKYDRAW_SHARED_THEME_OVERRIDE='invalid';f.app.renderEventControls();assert.equal(f.el('#appShell').dataset.theme,f.app.getEvent().appearance.themeId);
+ f.advance(10000);f.app.drawTick();assert.equal(f.app.state.completed[0].winners.length,6);assert.equal(f.app.state.running,false);
+});

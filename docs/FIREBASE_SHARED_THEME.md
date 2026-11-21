@@ -57,7 +57,7 @@ The configured database is Standard to match this repository's document SDK and 
 
 ## Evidence and remaining gate
 
-- 60 original regression tests pass (including 13 manual batches and 44 unique winners).
+- 60 original regression tests plus one cloud-override active-session test pass (including 13 manual batches and 44 unique winners).
 - 8 real-controller VM tests pass for preview/publish, default/all themes, authorization gating, offline failure and invalid snapshots.
 - Static integration contract and Python publication tests pass.
 - 12 Firestore Emulator tests pass: public exact read, no list/private read, unauthenticated/non-admin/disabled-role write denial, all seven Admin writes, self-promotion/batch escalation denied, schema/private-field/type/timestamp rejection, missing fields, deletion/path denial, revoked Admin denial, and two independent public SDK listeners receiving an Admin update.
